@@ -8,6 +8,11 @@
 <title>CloudScale — Scalable. Available. Cloud-Powered.</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2322d3ee'/%3E%3Cstop offset='1' stop-color='%23ff9900'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='%230b1220'/%3E%3Cpath d='M18 40h28a8 8 0 0 0 .6-16A12 12 0 0 0 24 22a9 9 0 0 0-6 18z' fill='url(%23g)'/%3E%3C/svg%3E" />
 <link rel="stylesheet" href="style.css" />
+<script>
+  /* Set before paint: the load-in animation only applies when JS can finish it,
+     so the page still renders fully if this script never runs. */
+  document.documentElement.classList.add('js');
+</script>
 </head>
 <body>
 
@@ -16,6 +21,13 @@
      ============================================================ -->
 <div class="bg-layer" aria-hidden="true">
   <div class="bg-grid"></div>
+  <div class="bg-stars"></div>
+  <div class="bg-particles">
+    <i style="--x:8%;--d:0s;--s:26s"></i><i style="--x:18%;--d:-6s;--s:32s"></i>
+    <i style="--x:29%;--d:-13s;--s:28s"></i><i style="--x:41%;--d:-3s;--s:35s"></i>
+    <i style="--x:53%;--d:-18s;--s:30s"></i><i style="--x:64%;--d:-9s;--s:38s"></i>
+    <i style="--x:76%;--d:-22s;--s:27s"></i><i style="--x:88%;--d:-15s;--s:33s"></i>
+  </div>
   <div class="bg-orb bg-orb--1"></div>
   <div class="bg-orb bg-orb--2"></div>
   <div class="bg-orb bg-orb--3"></div>
@@ -67,22 +79,22 @@
   <div class="container hero__grid">
 
     <div class="hero__copy">
-      <span class="pill pill--accent reveal">
+      <span class="pill pill--accent boot" style="--boot:1">
         <span class="dot-live" aria-hidden="true"></span>
         AWS Cloud Computing Project — Project 4
       </span>
 
-      <h1 class="hero__title reveal">
+      <h1 class="hero__title boot" style="--boot:2">
         Build Once.
         <span class="grad-text">Scale Automatically.</span>
       </h1>
 
-      <p class="hero__lead reveal">
+      <p class="hero__lead boot" style="--boot:3">
         CloudScale demonstrates how AWS Application Load Balancer and Auto Scaling work together
         to deliver highly available and scalable web applications.
       </p>
 
-      <div class="hero__actions reveal">
+      <div class="hero__actions boot" style="--boot:4">
         <a href="#architecture" class="btn btn--primary">
           Explore Architecture
           <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
@@ -90,7 +102,7 @@
         <a href="#services" class="btn btn--ghost">View AWS Stack</a>
       </div>
 
-      <dl class="hero__stats reveal">
+      <dl class="hero__stats boot" style="--boot:5">
         <div class="statline">
           <dt>System Status</dt>
           <dd><span class="status-dot status-dot--ok" data-hero-status-dot></span><span data-hero-status>Operational</span></dd>
@@ -111,7 +123,7 @@
     </div>
 
     <!-- Animated mini architecture illustration -->
-    <div class="hero__visual reveal" aria-hidden="true">
+    <div class="hero__visual boot boot--visual" style="--boot:2" aria-hidden="true">
       <div class="glass hero__card">
         <div class="hero__card-head">
           <span class="chip chip--ok"><span class="dot-live"></span>live topology</span>
@@ -254,6 +266,7 @@
             </span>
             <span class="arch-node__name">Application Load Balancer</span>
             <span class="arch-node__meta">Listener :80 / :443 → Target Group</span>
+            <span class="alb-activity" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
             <span class="badge badge--ok" data-arch-lb>ACTIVE</span>
           </button>
         </div>
@@ -287,6 +300,18 @@
           </button>
         </div>
 
+        <!-- Template: the fleet is re-rendered from the shared simulation state -->
+        <template id="ec2NodeTemplate">
+          <button class="arch-node arch-node--ec2 is-healthy" data-node="ec2" data-title="Amazon EC2 Instance" data-desc="Runs the web application on Apache. Each instance is launched from the same Launch Template." aria-describedby="archInfo">
+            <span class="arch-node__icon">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="4.5" y="4.5" width="15" height="15" rx="2.2"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 2.5v2M15 2.5v2M9 19.5v2M15 19.5v2M2.5 9h2M2.5 15h2M19.5 9h2M19.5 15h2"/></svg>
+            </span>
+            <span class="arch-node__name">EC2 Instance</span>
+            <span class="arch-node__meta">t2.micro</span>
+            <span class="badge badge--ok" data-health>HEALTHY</span>
+          </button>
+        </template>
+
         <!-- Merge connector -->
         <div class="wire wire--merge" data-wire="ec2-asg">
           <span class="wire__drop wire__drop--left"></span>
@@ -304,6 +329,7 @@
             <span class="arch-node__name">Auto Scaling Group</span>
             <span class="arch-node__meta">min 2 · desired <b data-arch-desired>2</b> · max 4</span>
             <span class="badge badge--info">ENABLED</span>
+            <svg class="asg-boundary" aria-hidden="true"><rect width="100%" height="100%" rx="16" /></svg>
           </button>
         </div>
       </div>
@@ -570,32 +596,32 @@
 
       <div class="console__body">
         <div class="kpi-grid">
-          <div class="glass kpi">
+          <div class="glass kpi reveal">
             <span class="kpi__label">Load Balancer</span>
             <span class="kpi__value kpi__value--ok" data-kpi-lb>Active</span>
             <span class="kpi__sub">listener :80 → target group</span>
           </div>
-          <div class="glass kpi">
+          <div class="glass kpi reveal">
             <span class="kpi__label">Healthy Instances</span>
             <span class="kpi__value" data-kpi-healthy>2</span>
             <span class="kpi__sub">passing health checks</span>
           </div>
-          <div class="glass kpi">
+          <div class="glass kpi reveal">
             <span class="kpi__label">Desired Capacity</span>
             <span class="kpi__value" data-kpi-desired>2</span>
             <span class="kpi__sub">set by scaling policy</span>
           </div>
-          <div class="glass kpi">
+          <div class="glass kpi reveal">
             <span class="kpi__label">Minimum Capacity</span>
             <span class="kpi__value">2</span>
             <span class="kpi__sub">never scales below</span>
           </div>
-          <div class="glass kpi">
+          <div class="glass kpi reveal">
             <span class="kpi__label">Maximum Capacity</span>
             <span class="kpi__value">4</span>
             <span class="kpi__sub">upper scaling limit</span>
           </div>
-          <div class="glass kpi">
+          <div class="glass kpi reveal">
             <span class="kpi__label">Traffic</span>
             <span class="kpi__value" data-kpi-traffic>Normal</span>
             <span class="kpi__sub">requests per minute trend</span>
@@ -603,7 +629,7 @@
         </div>
 
         <div class="charts">
-          <div class="glass chart">
+          <div class="glass chart reveal">
             <div class="chart__head">
               <h3>Requests / min</h3>
               <b data-chart-requests>0</b>
@@ -618,13 +644,15 @@
               <g class="chart__grid">
                 <line x1="0" y1="27" x2="300" y2="27" /><line x1="0" y1="55" x2="300" y2="55" /><line x1="0" y1="83" x2="300" y2="83" />
               </g>
-              <polygon id="reqArea" fill="url(#reqFill)" points="" />
-              <polyline id="reqLine" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="" />
+              <g class="chart__shift" id="reqShift">
+                <polygon id="reqArea" fill="url(#reqFill)" points="" />
+                <polyline id="reqLine" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="" />
+              </g>
             </svg>
             <span class="chart__foot">rolling 60-second window</span>
           </div>
 
-          <div class="glass chart">
+          <div class="glass chart reveal">
             <div class="chart__head">
               <h3>Active Instances</h3>
               <b data-chart-instances>2</b>
@@ -633,7 +661,7 @@
             <span class="chart__foot">capacity history · min 2 / max 4</span>
           </div>
 
-          <div class="glass chart">
+          <div class="glass chart reveal">
             <div class="chart__head">
               <h3>Traffic Level</h3>
               <b data-chart-traffic>Normal</b>
@@ -650,7 +678,7 @@
           </div>
         </div>
 
-        <div class="glass log">
+        <div class="glass log reveal">
           <div class="log__head"><span class="dot-live"></span> Auto Scaling activity</div>
           <ul class="log__list" id="eventLog" aria-live="polite"></ul>
         </div>

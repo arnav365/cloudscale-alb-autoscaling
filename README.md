@@ -129,6 +129,22 @@ serverless services are involved.
 - One shared state object drives every panel, so the hero, architecture diagram, scalability
   stages, availability demo, dashboard and demonstration panel always agree
 
+**Interface & motion**
+
+- Staged page-load sequence: logo, navigation, heading, copy, buttons, topology and status chips
+- Smooth scrolling for every in-page link, with the navbar highlight held steady during the glide
+- Scroll-reveal animations driven by `IntersectionObserver` (each element animates once)
+- Living architecture diagram: traffic packets per target, ALB activity meter, EC2 heartbeat,
+  a marching Auto Scaling boundary, and packet speed that follows the current traffic tier
+- Scale-out animates new instances into the diagram; scale-in animates the terminated one away
+- Instance failure plays a sequence: alarm flash → unhealthy badge → connector dims → packets
+  reroute → the surviving targets visibly absorb the load → dashboard and activity log update
+- Counters tween between values, the request chart streams sideways instead of jumping
+- Card lift with a pointer-following highlight, button sweep/press feedback, icon micro-motion
+- Navbar shrinks and gains a stronger blur once the page is scrolled
+- Decorative loops pause while their section is off screen, and the whole motion layer is
+  disabled under `prefers-reduced-motion: reduce`
+
 > **Note:** every metric and status on the site is generated in the browser. All interactive
 > panels are clearly labelled **"Demo / Simulated Data"** — the page is not connected to a live
 > AWS account.
@@ -285,7 +301,7 @@ sudo systemctl restart httpd
 
 ## Testing
 
-Verified locally in Chromium (desktop 1440px, tablet 820px, mobile 390px):
+Verified locally in Chromium at 1440px, 1024px, 768px and 390px:
 
 | Check | Result |
 | ----- | ------ |
@@ -300,6 +316,10 @@ Verified locally in Chromium (desktop 1440px, tablet 820px, mobile 390px):
 | No JavaScript console errors or failed requests | Pass |
 | No horizontal overflow at 1440 / 820 / 390 px | Pass |
 | No external assets — the page renders fully offline | Pass |
+| Page-load sequence completes with no layout shift (transform/opacity only) | Pass |
+| Architecture connectors re-draw correctly for 2, 3 and 4 instances | Pass |
+| Failure choreography clears fully on Reset (no stuck animation classes) | Pass |
+| `prefers-reduced-motion: reduce` — motion off, every control still works | Pass |
 
 Manual checklist for a presentation run-through:
 

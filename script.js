@@ -43,26 +43,53 @@
   }
 
   /** Count from the element's current number up/down to `to`. */
-  function animateNumber(el, to, duration) {
+  function animateNumber(el, to, options) {
     if (!el) return;
+    const opts = options || {};
+    const suffix = opts.suffix || '';
     const from = parseInt(el.textContent, 10) || 0;
-    if (from === to || prefersReducedMotion) { el.textContent = String(to); return; }
-    const ms = duration || 500;
+    if (from === to || prefersReducedMotion) { el.textContent = String(to) + suffix; return; }
+    const ms = opts.duration || 520;
     const start = performance.now();
     (function step(now) {
       const p = clamp((now - start) / ms, 0, 1);
       const eased = 1 - Math.pow(1 - p, 3);
-      el.textContent = String(Math.round(from + (to - from) * eased));
+      el.textContent = String(Math.round(from + (to - from) * eased)) + suffix;
       if (p < 1) requestAnimationFrame(step);
     })(start);
+  }
+
+  /** Animate every element matching a selector towards a numeric value. */
+  function setNumber(selector, value, suffix) {
+    $$(selector).forEach(function (node) { animateNumber(node, value, { suffix: suffix || '' }); });
+  }
+
+  /** Add a class for a moment, then take it off again (transient choreography). */
+  const pendingTimers = [];
+  function later(fn, delay) {
+    const id = window.setTimeout(function () { fn(); }, delay);
+    pendingTimers.push(id);
+    return id;
+  }
+  function clearPending() {
+    while (pendingTimers.length) window.clearTimeout(pendingTimers.pop());
+  }
+  function flash(instanceId, className, duration) {
+    if (prefersReducedMotion) return;
+    const nodes = $$('[data-instance="' + instanceId + '"]');
+    nodes.forEach(function (node) { node.classList.add(className); });
+    later(function () {
+      nodes.forEach(function (node) { node.classList.remove(className); });
+    }, duration || 1400);
   }
 
   /** Short visual acknowledgement that a button was pressed. */
   function pressFeedback(btn) {
     if (!btn) return;
-    btn.classList.remove('is-pressed');
-    void btn.offsetWidth;
-    btn.classList.add('is-pressed');
+    btn.classList.remove('is-pressed', 'is-working');
+    void btn.offsetWidth;                       // restart both CSS animations
+    btn.classList.add('is-pressed', 'is-working');
+    window.setTimeout(function () { btn.classList.remove('is-working'); }, 800);
   }
 
   /* ========================================================================
@@ -73,10 +100,10 @@
 
   /* Traffic tiers drive capacity, the dashboard and the scalability stages. */
   const TRAFFIC_LEVELS = [
-    { key: 'low',    label: 'Low',    desired: 2, rpm: [40, 110],   cpu: [12, 22], gauge: 15, stage: 1 },
-    { key: 'normal', label: 'Normal', desired: 2, rpm: [150, 280],  cpu: [24, 38], gauge: 40, stage: 1 },
-    { key: 'high',   label: 'High',   desired: 3, rpm: [340, 540],  cpu: [52, 68], gauge: 72, stage: 2 },
-    { key: 'peak',   label: 'Peak',   desired: 4, rpm: [640, 920],  cpu: [74, 89], gauge: 96, stage: 3 }
+    { key: 'low',    label: 'Low',    desired: 2, rpm: [40, 110],   cpu: [12, 22], gauge: 15, stage: 1, speed: '2.6s' },
+    { key: 'normal', label: 'Normal', desired: 2, rpm: [150, 280],  cpu: [24, 38], gauge: 40, stage: 1, speed: '1.9s' },
+    { key: 'high',   label: 'High',   desired: 3, rpm: [340, 540],  cpu: [52, 68], gauge: 72, stage: 2, speed: '1.3s' },
+    { key: 'peak',   label: 'Peak',   desired: 4, rpm: [640, 920],  cpu: [74, 89], gauge: 96, stage: 3, speed: '0.9s' }
   ];
 
   const AZS = ['ap-south-1a', 'ap-south-1b', 'ap-south-1a', 'ap-south-1b'];
@@ -87,6 +114,7 @@
     nextInstanceNumber: 3,  // EC2-01 and EC2-02 exist at boot
     requestHistory: [],     // rolling samples for the requests chart
     capacityHistory: [],    // rolling samples for the instance bar chart
+    renderedIds: [],        // instance ids painted by the previous render
     cpu: 28
   };
 
@@ -114,8 +142,14 @@
      ==================================================================== */
   const el = {
     heroFleet:      $('[data-hero-fleet]'),
+    archDiagram:    $('#archDiagram'),
     archFleet:      $('#archFleet'),
+    ec2Template:    $('#ec2NodeTemplate'),
     splitWire:      $('.wire--split'),
+    mergeWire:      $('.wire--merge'),
+    asgNode:        $('.arch-node--asg'),
+    albNode:        $('.arch-node--alb'),
+    reqShift:       $('#reqShift'),
     haTargets:      $('#haTargets'),
     haMessage:      $('#haMessage'),
     demoFleet:      $('#demoFleet'),
@@ -159,31 +193,18 @@
       state.instances.forEach(function (inst, i) {
         const node = document.createElement('div');
         node.className = 'mini-node mini-node--ec2' + (inst.healthy ? '' : ' is-unhealthy');
+        if (isNewInstance(inst.id)) node.classList.add('is-new');
+        node.dataset.instance = inst.id;
         node.style.animationDelay = (i * 60) + 'ms';
         node.textContent = inst.id;
         el.heroFleet.appendChild(node);
       });
     }
 
-    /* --- Architecture diagram (health of the two documented instances) --- */
-    $$('.arch-node--ec2').forEach(function (node) {
-      const inst = state.instances.filter((i) => i.id === node.dataset.instance)[0];
-      const isHealthy = inst ? inst.healthy : true;
-      node.classList.toggle('is-healthy', isHealthy);
-      node.classList.toggle('is-unhealthy', !isHealthy);
-      const badge = $('[data-health]', node);
-      if (badge) {
-        badge.textContent = isHealthy ? 'HEALTHY' : 'UNHEALTHY';
-        badge.classList.toggle('badge--ok', isHealthy);
-        badge.classList.toggle('badge--bad', !isHealthy);
-      }
-    });
-    if (el.splitWire) {
-      const first = state.instances[0];
-      const second = state.instances[1];
-      el.splitWire.classList.toggle('is-left-down', !!first && !first.healthy);
-      el.splitWire.classList.toggle('is-right-down', !!second && !second.healthy);
-    }
+    /* --- Architecture diagram: fleet, connectors and traffic rhythm --- */
+    renderArchFleet();
+    if (el.archDiagram) el.archDiagram.style.setProperty('--packet-speed', lvl.speed);
+    if (el.albNode) el.albNode.classList.toggle('is-degraded', !lbActive);
     setText('[data-arch-desired]', total);
     $$('[data-arch-lb]').forEach(function (badge) {
       badge.textContent = lbActive ? 'ACTIVE' : 'NO TARGETS';
@@ -205,8 +226,8 @@
     setText('[data-ha-healthy-count]', healthy);
 
     /* --- Dashboard KPIs --- */
-    setText('[data-kpi-healthy]', healthy);
-    setText('[data-kpi-desired]', total);
+    setNumber('[data-kpi-healthy]', healthy);
+    setNumber('[data-kpi-desired]', total);
     setText('[data-kpi-traffic]', lvl.label);
     setText('[data-chart-traffic]', lvl.label);
     $$('[data-kpi-lb]').forEach(function (node) {
@@ -234,6 +255,82 @@
     /* --- Control availability --- */
     if (el.btnIncrease) el.btnIncrease.disabled = state.levelIndex >= TRAFFIC_LEVELS.length - 1;
     if (el.btnDecrease) el.btnDecrease.disabled = state.levelIndex <= 0;
+
+    state.renderedIds = state.instances.map(function (i) { return i.id; });
+  }
+
+  /** True while an instance has not yet been painted by a previous render. */
+  function isNewInstance(id) {
+    return state.renderedIds.length > 0 && state.renderedIds.indexOf(id) === -1;
+  }
+
+  /* --- Architecture fleet -------------------------------------------------
+     The diagram's baseline is the documented pair (EC2 Instance 1 and 2).
+     When the simulation scales out, extra instances animate into the same
+     tier and the ALB connectors are re-drawn to reach every target. */
+  const FLEET_GAP = { 2: 32, 3: 22, 4: 16 };
+
+  function renderArchFleet() {
+    if (!el.archFleet || !el.ec2Template) return;
+    const count = state.instances.length;
+
+    el.archFleet.innerHTML = '';
+    state.instances.forEach(function (inst, i) {
+      const node = el.ec2Template.content.firstElementChild.cloneNode(true);
+      node.dataset.instance = inst.id;
+      node.classList.toggle('is-healthy', inst.healthy);
+      node.classList.toggle('is-unhealthy', !inst.healthy);
+      if (isNewInstance(inst.id)) node.classList.add('is-new');
+      $('.arch-node__name', node).textContent = 'EC2 Instance ' + (i + 1);
+      $('.arch-node__meta', node).textContent = 't2.micro · AZ-' + inst.az.slice(-1);
+      const badge = $('[data-health]', node);
+      badge.textContent = inst.healthy ? 'HEALTHY' : 'UNHEALTHY';
+      badge.classList.toggle('badge--ok', inst.healthy);
+      badge.classList.toggle('badge--bad', !inst.healthy);
+      el.archFleet.appendChild(node);
+    });
+
+    el.archFleet.style.setProperty('--fleet-cols', count);
+    el.archFleet.dataset.count = count;
+    drawWire(el.splitWire, count, true);
+    drawWire(el.mergeWire, count, false);
+  }
+
+  /**
+   * Re-draw a branching connector so one drop line lands on each EC2 card.
+   * Column centres are expressed in calc() so they stay correct at any width.
+   */
+  function drawWire(wire, count, withPackets) {
+    if (!wire) return;
+    const gap = FLEET_GAP[count] || 32;
+    const span = '(100% - ' + ((count - 1) * gap) + 'px) / ' + count;
+    const centre = function (k) { return 'calc(' + span + ' * ' + (k + 0.5) + ' + ' + (k * gap) + 'px)'; };
+
+    $$('.wire__drop', wire).forEach(function (drop) { drop.remove(); });
+
+    const frag = document.createDocumentFragment();
+    state.instances.forEach(function (inst, k) {
+      const drop = document.createElement('span');
+      drop.className = 'wire__drop' + (inst.healthy ? '' : ' is-down');
+      drop.style.left = centre(k);
+      drop.dataset.instance = inst.id;
+      if (withPackets) {
+        const packet = document.createElement('i');
+        /* Each target gets its own packet rhythm so the paths stay distinct. */
+        packet.className = 'packet' + (k === 1 ? ' packet--b' : k === 2 ? ' packet--c' : k === 3 ? ' packet--d' : '');
+        drop.appendChild(packet);
+      }
+      frag.appendChild(drop);
+    });
+    wire.appendChild(frag);
+
+    const bar = $('.wire__bar', wire);
+    if (bar) {
+      bar.style.left = centre(0);
+      bar.style.right = centre(0);
+      bar.style.display = count > 1 ? '' : 'none';
+    }
+    wire.classList.toggle('is-rerouted', hasUnhealthy());
   }
 
   /** The high-availability target list mirrors the first two instances. */
@@ -266,6 +363,8 @@
     state.instances.forEach(function (inst, i) {
       const node = document.createElement('div');
       node.className = 'demo-node' + (inst.healthy ? '' : ' is-unhealthy');
+      if (isNewInstance(inst.id)) node.classList.add('is-new');
+      node.dataset.instance = inst.id;
       node.style.animationDelay = (i * 70) + 'ms';
       const load = inst.healthy ? clamp(Math.round(lvl.cpu[0] * (2 / Math.max(healthyCount, 1))), 8, 95) : 0;
       node.innerHTML =
@@ -311,6 +410,7 @@
   /** Grow or shrink the fleet until it matches the desired capacity. */
   function reconcileCapacity(desired) {
     const target = clamp(desired, MIN_CAPACITY, MAX_CAPACITY);
+    const removed = [];
 
     while (state.instances.length < target) {
       const inst = makeInstance(state.nextInstanceNumber++);
@@ -322,9 +422,35 @@
       /* Auto Scaling terminates unhealthy instances first, then the newest. */
       let index = state.instances.findIndex((i) => !i.healthy);
       if (index === -1) index = state.instances.length - 1;
-      const removed = state.instances.splice(index, 1)[0];
-      logEvent('Scale-in: terminating ' + removed.id + (removed.healthy ? '' : ' (unhealthy)'), 'scale-in');
+      const gone = state.instances.splice(index, 1)[0];
+      removed.push(gone.id);
+      logEvent('Scale-in: terminating ' + gone.id + (gone.healthy ? '' : ' (unhealthy)'), 'scale-in');
     }
+
+    return removed;
+  }
+
+  /**
+   * Let terminating instances animate away before the panels are re-rendered,
+   * so scale-in reads as a real infrastructure event rather than a redraw.
+   */
+  function renderAfterExit(removedIds) {
+    const nodes = removedIds.reduce(function (all, id) {
+      return all.concat($$('[data-instance="' + id + '"]'));
+    }, []);
+    if (!nodes.length || prefersReducedMotion) { render(); return; }
+    nodes.forEach(function (node) { node.classList.add('is-leaving'); });
+    later(render, 340);
+  }
+
+  /** Brief highlight on the diagram while capacity is being adjusted. */
+  function markScaling() {
+    if (prefersReducedMotion) return;
+    [el.archDiagram, el.asgNode].forEach(function (node) {
+      if (!node) return;
+      node.classList.add('is-scaling');
+      later(function () { node.classList.remove('is-scaling'); }, 1500);
+    });
   }
 
   /** Move to another traffic tier and let capacity follow. */
@@ -336,8 +462,9 @@
     state.levelIndex = next;
     const lvl = level();
     const before = state.instances.length;
-    reconcileCapacity(lvl.desired);
+    const removed = reconcileCapacity(lvl.desired);
     const after = state.instances.length;
+    if (after !== before) markScaling();
 
     logEvent('Traffic level → ' + lvl.label.toUpperCase(), next > previous ? 'scale-out' : 'scale-in');
 
@@ -355,7 +482,7 @@
 
     /* Nudge the charts immediately so the change is visible straight away. */
     sampleMetrics();
-    render();
+    renderAfterExit(removed);
 
     if (source === 'cycle') {
       // The scalability section button walks through every tier in order.
@@ -368,27 +495,51 @@
 
   /** Mark the first instance unhealthy, or bring everything back online. */
   function toggleFailure() {
-    if (hasUnhealthy()) {
+    const recovering = hasUnhealthy();
+    let subject = null;
+
+    if (recovering) {
       state.instances.forEach((i) => { i.healthy = true; });
       logEvent('Health check passed — all targets back in service', 'ok');
       announce('All instances restored. The load balancer is using the full fleet again.', 'good');
       announceHa('All targets are passing health checks. Traffic is evenly distributed.', 'good');
     } else {
-      const victim = state.instances[0];
-      if (!victim) return;
-      victim.healthy = false;
-      logEvent('Health check failed on ' + victim.id + ' — target deregistered', 'alert');
-      announce('Unhealthy instance detected (' + victim.id + '). Traffic redirected to the remaining healthy instance(s).', 'alert');
+      subject = state.instances[0];
+      if (!subject) return;
+      subject.healthy = false;
+      logEvent('Health check failed on ' + subject.id + ' (2 consecutive checks)', 'alert');
+      announce('Unhealthy instance detected (' + subject.id + '). Traffic redirected to the remaining healthy instance(s).', 'alert');
       announceHa('Unhealthy instance detected. Traffic redirected to ' +
                  healthyInstances().map((i) => i.id).join(', ') + '.', 'alert');
     }
+
     sampleMetrics();
     render();
+
+    /* Choreography runs after the re-render, on the fresh DOM. The state above
+       is still the single source of truth — these classes are visual only. */
+    const survivors = healthyInstances().map(function (i) { return i.id; });
+    if (recovering) {
+      survivors.forEach(function (id) { flash(id, 'is-absorbing', 1500); });
+      later(function () { logEvent('Target group healthy — ' + survivors.length + ' of ' +
+        state.instances.length + ' targets passing checks', 'ok'); }, 650);
+    } else {
+      flash(subject.id, 'is-alarming', 1400);
+      later(function () {
+        survivors.forEach(function (id) { flash(id, 'is-absorbing', 1600); });
+        logEvent('Target ' + subject.id + ' deregistered — traffic rerouted to ' + survivors.join(', '), 'alert');
+      }, 700);
+    }
   }
 
   /** Back to the documented baseline: normal traffic, 2 healthy instances. */
   function resetDemo() {
+    clearPending();
+    $$('.is-alarming, .is-absorbing, .is-leaving, .is-scaling').forEach(function (node) {
+      node.classList.remove('is-alarming', 'is-absorbing', 'is-leaving', 'is-scaling');
+    });
     state.levelIndex = 1;
+    state.renderedIds = [];
     seedInstances();
     state.requestHistory = [];
     state.capacityHistory = [];
@@ -403,11 +554,11 @@
   /* ========================================================================
      05. MONITORING CHARTS + TICKER
      ==================================================================== */
-  const REQ_POINTS = 30;   // samples kept for the request line chart
+  const REQ_POINTS = 30;   // visible samples on the request line chart
   const BAR_POINTS = 24;   // bars in the capacity chart
   const SVG_W = 300, SVG_H = 110;
 
-  function sampleMetrics() {
+  function sampleMetrics(options) {
     const lvl = level();
     const healthy = Math.max(healthyInstances().length, 1);
 
@@ -419,24 +570,28 @@
     const spread = (state.instances.length || 1) / healthy;
     state.cpu = clamp(Math.round(randomBetween(lvl.cpu[0], lvl.cpu[1]) * spread), 5, 99);
 
+    /* One extra sample is kept off-canvas to the left: the chart group slides
+       by exactly one step on each tick, so the line streams instead of jumping. */
     state.requestHistory.push(requests);
-    while (state.requestHistory.length > REQ_POINTS) state.requestHistory.shift();
+    while (state.requestHistory.length > REQ_POINTS + 1) state.requestHistory.shift();
 
     state.capacityHistory.push(state.instances.length);
     while (state.capacityHistory.length > BAR_POINTS) state.capacityHistory.shift();
 
-    drawCharts(requests);
+    drawCharts(requests, options && options.animate);
   }
 
-  function drawCharts(latestRequests) {
+  function drawCharts(latestRequests, animate) {
     /* --- Requests: SVG line + area --- */
+    const step = SVG_W / (REQ_POINTS - 1);
     if (el.reqLine && state.requestHistory.length) {
       /* The Y axis follows the window's own peak so the line always fills
          the chart, whatever traffic tier the demo is currently in. */
       const peak = Math.max.apply(null, state.requestHistory);
       const ceiling = Math.max(120, Math.ceil((peak * 1.25) / 50) * 50);
+      const offset = state.requestHistory.length - REQ_POINTS;   // 1 once the window is full
       const pts = state.requestHistory.map(function (value, i) {
-        const x = (i / (REQ_POINTS - 1)) * SVG_W;
+        const x = (i - offset) * step;
         const y = SVG_H - 6 - (clamp(value, 0, ceiling) / ceiling) * (SVG_H - 16);
         return x.toFixed(1) + ',' + y.toFixed(1);
       });
@@ -446,9 +601,18 @@
         const lastX = pts[pts.length - 1].split(',')[0];
         el.reqArea.setAttribute('points', firstX + ',' + SVG_H + ' ' + pts.join(' ') + ' ' + lastX + ',' + SVG_H);
       }
+
+      /* Slide the whole plot one step to the left (transform only — cheap). */
+      if (el.reqShift && animate && !prefersReducedMotion && offset > 0) {
+        el.reqShift.style.transition = 'none';
+        el.reqShift.style.transform = 'translateX(' + step.toFixed(2) + 'px)';
+        void el.reqShift.getBoundingClientRect();
+        el.reqShift.style.transition = '';
+        el.reqShift.style.transform = 'translateX(0)';
+      }
     }
-    setText('[data-chart-requests]', latestRequests != null ? latestRequests : 0);
-    setText('[data-chart-cpu]', state.cpu + '%');
+    setNumber('[data-chart-requests]', latestRequests != null ? latestRequests : 0);
+    setNumber('[data-chart-cpu]', state.cpu, '%');
 
     /* --- Capacity: bar chart --- */
     if (el.instanceBars) {
@@ -463,18 +627,18 @@
         bars[i].classList.toggle('is-peak', value >= MAX_CAPACITY);
       }
     }
-    setText('[data-chart-instances]', state.instances.length);
+    setNumber('[data-chart-instances]', state.instances.length);
   }
 
   /** Pre-fill the charts so they never start empty. */
   function seedCharts() {
-    for (let i = 0; i < REQ_POINTS; i++) sampleMetrics();
+    for (let i = 0; i <= REQ_POINTS; i++) sampleMetrics();
   }
 
   let tickerId = null;
   function startTicker() {
     stopTicker();
-    tickerId = window.setInterval(sampleMetrics, 2200);
+    tickerId = window.setInterval(function () { sampleMetrics({ animate: true }); }, 2200);
   }
   function stopTicker() {
     if (tickerId) { window.clearInterval(tickerId); tickerId = null; }
@@ -531,6 +695,8 @@
     }
 
     /* --- Sticky styling, scroll progress and active link --- */
+    let navLock = 0;                       // pauses the spy during a click-scroll
+
     function onScroll() {
       const y = window.scrollY || document.documentElement.scrollTop;
 
@@ -540,6 +706,8 @@
         const max = document.documentElement.scrollHeight - window.innerHeight;
         progress.style.width = (max > 0 ? clamp((y / max) * 100, 0, 100) : 0) + '%';
       }
+
+      if (Date.now() < navLock) return;  // a click already chose the section
 
       /* The last nav section that starts above the viewport mid-line wins. */
       let activeIndex = 0;
@@ -562,18 +730,42 @@
     }, { passive: true });
     onScroll();
 
-    /* --- Smooth scrolling fallback for browsers without CSS smooth scroll --- */
-    const supportsSmooth = 'scrollBehavior' in document.documentElement.style;
-    if (!supportsSmooth) {
-      $$('a[href^="#"]').forEach(function (anchor) {
-        anchor.addEventListener('click', function (event) {
-          const target = $(anchor.getAttribute('href'));
-          if (!target) return;
-          event.preventDefault();
-          window.scrollTo(0, target.offsetTop - 80);
-        });
-      });
-    }
+    /* --- Smooth scrolling for navigation, hero buttons and footer links ---
+       One delegated handler covers every in-page anchor. It measures the live
+       navbar height (which shrinks on scroll) so nothing lands under the bar,
+       and falls back to an instant jump when reduced motion is requested. */
+    document.addEventListener('click', function (event) {
+      const anchor = event.target.closest && event.target.closest('a[href^="#"]');
+      if (!anchor || anchor.getAttribute('href') === '#') return;
+
+      const hash = anchor.getAttribute('href');
+      const target = $(hash);
+      if (!target) return;
+
+      event.preventDefault();
+      closeMenu();
+
+      const offset = (nav ? nav.offsetHeight : 72) + 16;
+      const top = Math.max(0, target.getBoundingClientRect().top + window.scrollY - offset);
+      window.scrollTo({ top: top, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState(null, '', hash);
+      }
+
+      /* Highlight the destination straight away and hold it while the page
+         glides, so the navbar does not flicker through every section. */
+      const match = targets.filter(function (entry) { return '#' + entry.section.id === hash; })[0];
+      if (match) {
+        navLinks.forEach(function (link) { link.classList.remove('is-active'); });
+        match.link.classList.add('is-active');
+        navLock = Date.now() + (prefersReducedMotion ? 0 : 1000);
+      }
+
+      /* Keyboard users continue from the section they asked for. */
+      target.setAttribute('tabindex', '-1');
+      target.focus({ preventScroll: true });
+    });
   }
 
   /* ========================================================================
@@ -600,30 +792,34 @@
      08. ARCHITECTURE DIAGRAM INTERACTIONS
      ==================================================================== */
   function initArchitecture() {
-    const nodes = $$('.arch-node');
+    const diagram = el.archDiagram;
     const steps = $$('.flow__step');
     const title = $('#archInfoTitle');
     const desc = $('#archInfoDesc');
-    if (!nodes.length) return;
+    if (!diagram) return;
 
     function showInfo(node) {
+      if (!node) return;
       if (title) title.textContent = node.dataset.title || '';
       if (desc) desc.textContent = node.dataset.desc || '';
-      nodes.forEach(function (n) { n.classList.toggle('is-active', n === node); });
+      $$('.arch-node', diagram).forEach(function (n) { n.classList.toggle('is-active', n === node); });
       steps.forEach(function (s) { s.classList.toggle('is-active', s.dataset.target === node.dataset.node); });
     }
 
-    nodes.forEach(function (node) {
-      node.addEventListener('mouseenter', function () { showInfo(node); });
-      node.addEventListener('focus', function () { showInfo(node); });
-      node.addEventListener('click', function () { showInfo(node); });
+    /* Delegated, so the EC2 tier can be re-rendered by the simulation without
+       losing its hover / focus / tap behaviour. */
+    ['mouseover', 'focusin', 'click'].forEach(function (type) {
+      diagram.addEventListener(type, function (event) {
+        const node = event.target.closest && event.target.closest('.arch-node');
+        if (node) showInfo(node);
+      });
     });
 
     /* Hovering a request-flow step highlights the component it describes. */
     steps.forEach(function (step) {
       const highlight = function () {
         const key = step.dataset.target;
-        const match = nodes.filter(function (n) { return n.dataset.node === key; })[0];
+        const match = $$('.arch-node', diagram).filter(function (n) { return n.dataset.node === key; })[0];
         if (match) showInfo(match);
         steps.forEach(function (s) { s.classList.toggle('is-active', s === step); });
       };
@@ -632,13 +828,72 @@
     });
 
     /* Clear highlighting when the pointer leaves the diagram entirely. */
-    const diagram = $('#archDiagram');
-    if (diagram) {
-      diagram.addEventListener('mouseleave', function () {
-        nodes.forEach(function (n) { n.classList.remove('is-active'); });
-        steps.forEach(function (s) { s.classList.remove('is-active'); });
-      });
+    diagram.addEventListener('mouseleave', function () {
+      $$('.arch-node', diagram).forEach(function (n) { n.classList.remove('is-active'); });
+      steps.forEach(function (s) { s.classList.remove('is-active'); });
+    });
+  }
+
+  /* ========================================================================
+     09b. AMBIENT MOTION: in-view gating, timeline rail, pointer spotlight
+     ==================================================================== */
+
+  /** Decorative loops only run while their section is on screen. */
+  function initInView() {
+    const sections = [$('.hero'), $('#architecture')].filter(Boolean);
+    if (!('IntersectionObserver' in window)) {
+      sections.forEach(function (node) { node.classList.add('in-view'); });
+      return;
     }
+    const observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        entry.target.classList.toggle('in-view', entry.isIntersecting);
+      });
+    }, { rootMargin: '120px 0px' });
+    sections.forEach(function (node) { observer.observe(node); });
+  }
+
+  /** The deployment rail draws itself once the timeline is reached. */
+  function initTimeline() {
+    const timeline = $('.timeline');
+    if (!timeline) return;
+    if (!('IntersectionObserver' in window) || prefersReducedMotion) {
+      timeline.classList.add('is-drawn');
+      return;
+    }
+    const observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('is-drawn');
+        observer.unobserve(entry.target);
+      });
+    }, { threshold: 0.08 });
+    observer.observe(timeline);
+  }
+
+  /** Cards pick up a soft highlight that follows the pointer. */
+  function initSpotlight() {
+    if (prefersReducedMotion || !window.matchMedia('(hover: hover)').matches) return;
+    const SELECTOR = '.card, .panel, .kpi, .chart, .stage, .timeline__card, .demo__stat';
+    let queued = null;
+    let frame = 0;
+
+    function apply() {
+      frame = 0;
+      if (!queued) return;
+      const rect = queued.card.getBoundingClientRect();
+      queued.card.style.setProperty('--mx', (((queued.x - rect.left) / rect.width) * 100).toFixed(1) + '%');
+      queued.card.style.setProperty('--my', (((queued.y - rect.top) / rect.height) * 100).toFixed(1) + '%');
+      queued = null;
+    }
+
+    /* One passive listener plus a single rAF per frame — no per-card handlers. */
+    document.addEventListener('pointermove', function (event) {
+      const card = event.target.closest && event.target.closest(SELECTOR);
+      if (!card) return;
+      queued = { card: card, x: event.clientX, y: event.clientY };
+      if (!frame) frame = requestAnimationFrame(apply);
+    }, { passive: true });
   }
 
   /* ========================================================================
@@ -718,6 +973,9 @@
     buildStageServers();
     initNavigation();
     initReveal();
+    initInView();
+    initTimeline();
+    initSpotlight();
     initArchitecture();
     initControls();
 
