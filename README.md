@@ -9,23 +9,36 @@
 
 ---
 
+## 🚀 Live Demo
+
+### ▶ **http://cloudscale-alb-1130756136.ap-south-1.elb.amazonaws.com**
+
+The site is served through **CloudScale-ALB**, the Application Load Balancer, which distributes every
+request across the healthy EC2 instances registered in `CloudScale-TG`. Refreshing the page may be handled
+by a different instance each time — that is the load balancer doing its job.
+
+> Served over **HTTP** at the load balancer's own DNS name. No custom domain or TLS certificate is part of
+> this project, so use `http://` rather than `https://`.
+
+---
+
 ## Table of Contents
 
-1. [Project Overview](#project-overview)
-2. [Problem Statement](#problem-statement)
-3. [Objectives](#objectives)
-4. [Features](#features)
-5. [AWS Architecture](#aws-architecture)
-6. [AWS Services Used](#aws-services-used)
-7. [Architecture Flow](#architecture-flow)
-8. [Auto Scaling Configuration](#auto-scaling-configuration)
-9. [Load Balancing Configuration](#load-balancing-configuration)
-10. [Security Configuration](#security-configuration)
-11. [Multi-AZ Deployment](#multi-az-deployment)
-12. [Testing Methodology](#testing-methodology)
-13. [Test Results](#test-results)
-14. [Project Verification](#project-verification)
-15. [Screenshots / Evidence](#screenshots--evidence)
+1. [Live Demo](#-live-demo)
+2. [Project Overview](#project-overview)
+3. [Problem Statement](#problem-statement)
+4. [Objectives](#objectives)
+5. [Features](#features)
+6. [AWS Architecture](#aws-architecture)
+7. [AWS Services Used](#aws-services-used)
+8. [Architecture Flow](#architecture-flow)
+9. [Auto Scaling Configuration](#auto-scaling-configuration)
+10. [Load Balancing Configuration](#load-balancing-configuration)
+11. [Security Configuration](#security-configuration)
+12. [Multi-AZ Deployment](#multi-az-deployment)
+13. [Testing Methodology](#testing-methodology)
+14. [Test Results](#test-results)
+15. [Project Verification](#project-verification)
 16. [Deployment & Setup Instructions](#deployment--setup-instructions)
 17. [Running the Website Locally](#running-the-website-locally)
 18. [Project Structure](#project-structure)
@@ -53,6 +66,7 @@ instance can serve any request, which is exactly what makes horizontal scaling p
 | **Region** | ap-south-1 (Mumbai) |
 | **Availability Zones** | ap-south-1a, ap-south-1b |
 | **Compute** | Amazon EC2 — `t3.micro`, Ubuntu, Apache |
+| **Live URL** | <http://cloudscale-alb-1130756136.ap-south-1.elb.amazonaws.com> |
 | **Entry point** | Application Load Balancer DNS name (HTTP) |
 | **Scaling** | EC2 Auto Scaling — target tracking, 50% average CPU |
 | **Front end** | HTML5 · CSS3 · Vanilla JavaScript (no frameworks, no build step) |
@@ -280,7 +294,8 @@ The goal was to confirm that Auto Scaling responds to real CPU pressure without 
 
 1. **Establish the baseline.** Confirm `CloudScale-ASG` is at desired capacity 2 and both targets report
    **InService / Healthy** in `CloudScale-TG`.
-2. **Confirm the site is served.** Open the ALB DNS name and confirm the website loads.
+2. **Confirm the site is served.** Open <http://cloudscale-alb-1130756136.ap-south-1.elb.amazonaws.com>
+   and confirm the website loads.
 3. **Generate CPU load.** Connect to the instances over SSH and run `stress-ng` to drive CPU utilisation
    up:
 
@@ -325,40 +340,13 @@ hand at any point during the test.
 
 | Item | Status | Evidence |
 | --- | --- | --- |
-| ALB successfully serves the website | ✅ Verified | The site loads at the `CloudScale-ALB` DNS name over HTTP |
+| ALB successfully serves the website | ✅ Verified | Live at <http://cloudscale-alb-1130756136.ap-south-1.elb.amazonaws.com> |
 | Target group has healthy targets | ✅ Verified | `CloudScale-TG` reports every registered instance Healthy |
 | ASG maintains minimum 2 instances | ✅ Verified | Capacity never dropped below 2 during testing |
 | CPU target tracking configured at 50% | ✅ Verified | Target tracking policy on `ASGAverageCPUUtilization`, target value 50 |
 | Scale-out successfully tested | ✅ Verified | **2 → 3 instances** under generated CPU load |
 | Scale-in successfully tested | ✅ Verified | **3 → 2 instances** after load was removed |
 | Multi-AZ deployment verified | ✅ Verified | Instances running in ap-south-1a and ap-south-1b |
-
----
-
-## Screenshots / Evidence
-
-Place the screenshots listed below in `assets/screenshots/` and they will render here.
-
-| # | Evidence | File | Status |
-| --- | --- | --- | --- |
-| 1 | Website served through the ALB DNS name | `assets/screenshots/01-alb-website.png` | _to add_ |
-| 2 | Load balancer details (`CloudScale-ALB`) | `assets/screenshots/02-alb-details.png` | _to add_ |
-| 3 | Target group with healthy targets (`CloudScale-TG`) | `assets/screenshots/03-target-group-healthy.png` | _to add_ |
-| 4 | Auto Scaling Group configuration (min/desired/max) | `assets/screenshots/04-asg-configuration.png` | _to add_ |
-| 5 | Target tracking policy at 50% CPU | `assets/screenshots/05-scaling-policy.png` | _to add_ |
-| 6 | Launch template (`CloudScale-Launch-Template`) | `assets/screenshots/06-launch-template.png` | _to add_ |
-| 7 | Instances across both Availability Zones | `assets/screenshots/07-multi-az-instances.png` | _to add_ |
-| 8 | CloudWatch CPU utilisation during the load test | `assets/screenshots/08-cloudwatch-cpu.png` | _to add_ |
-| 9 | Scale-out — ASG activity showing 2 → 3 | `assets/screenshots/09-scale-out-2-to-3.png` | _to add_ |
-| 10 | Three instances InService and Healthy | `assets/screenshots/10-three-healthy.png` | _to add_ |
-| 11 | Scale-in — ASG activity showing 3 → 2 | `assets/screenshots/11-scale-in-3-to-2.png` | _to add_ |
-| 12 | Security group inbound rules (`CloudScale-EC2-SG`) | `assets/screenshots/12-security-group.png` | _to add_ |
-
-To embed one in this document:
-
-```markdown
-![Scale-out from 2 to 3 instances](assets/screenshots/09-scale-out-2-to-3.png)
-```
 
 ---
 
@@ -430,8 +418,9 @@ Add a **target tracking** policy on **`ASGAverageCPUUtilization`** with a **targ
 
 ### 9. Test
 
-Open the ALB DNS name to confirm the site is served, then follow
-[Testing Methodology](#testing-methodology) to verify scaling in both directions.
+Open the load balancer's DNS name — for this deployment
+<http://cloudscale-alb-1130756136.ap-south-1.elb.amazonaws.com> — to confirm the site is served, then
+follow [Testing Methodology](#testing-methodology) to verify scaling in both directions.
 
 ---
 
@@ -466,8 +455,7 @@ cloudscale-alb-autoscaling/
 ├── script.js           # Navigation, scroll reveal, diagram interactions,
 │                       # simulation state, dashboard charts
 ├── README.md           # This document
-└── assets/
-    └── screenshots/    # AWS console evidence for the report
+└── assets/             # Reserved for static assets (none required)
 ```
 
 No dependencies, no build step and no external requests. `index.html`, `style.css` and `script.js` are
@@ -513,6 +501,7 @@ an individual instance, and costs nothing extra while demand is normal.
 **College Cloud Computing Project**
 CloudScale — Scalable & Highly Available Web Application with AWS ALB and Auto Scaling
 
+- Live demo: <http://cloudscale-alb-1130756136.ap-south-1.elb.amazonaws.com>
 - Cloud platform: Amazon Web Services (ap-south-1)
 - Front end: HTML5 · CSS3 · Vanilla JavaScript
 - Web server: Apache HTTP Server on Ubuntu

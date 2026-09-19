@@ -61,7 +61,7 @@
       <a href="#monitoring" class="nav__link">Monitoring</a>
       <a href="#verification" class="nav__link">Verification</a>
       <a href="#about" class="nav__link">About</a>
-      <a href="#demo" class="btn btn--primary btn--sm nav__cta">Launch Demo</a>
+      <a href="http://cloudscale-alb-1130756136.ap-south-1.elb.amazonaws.com" class="btn btn--primary btn--sm nav__cta" target="_blank" rel="noopener noreferrer">Live Demo <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1.8 1.8 0 0 1-1.8 1.8H5A1.8 1.8 0 0 1 3.2 19V7.8A1.8 1.8 0 0 1 5 6h5"/></svg></a>
     </nav>
 
     <button class="nav__toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks" aria-label="Toggle navigation menu">
@@ -103,7 +103,13 @@
         <a href="#services" class="btn btn--ghost">View AWS Stack</a>
       </div>
 
-      <dl class="hero__stats boot" style="--boot:5">
+      <a class="live-url boot" style="--boot:5" href="http://cloudscale-alb-1130756136.ap-south-1.elb.amazonaws.com" target="_blank" rel="noopener noreferrer">
+        <span class="live-url__badge"><span class="dot-live" aria-hidden="true"></span>Live</span>
+        <span class="live-url__text">cloudscale-alb-1130756136.ap-south-1.elb.amazonaws.com</span>
+        <span class="live-url__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1.8 1.8 0 0 1-1.8 1.8H5A1.8 1.8 0 0 1 3.2 19V7.8A1.8 1.8 0 0 1 5 6h5"/></svg></span>
+      </a>
+
+      <dl class="hero__stats boot" style="--boot:6">
         <div class="statline">
           <dt>System Status</dt>
           <dd><span class="status-dot status-dot--ok" data-hero-status-dot></span><span data-hero-status>Operational</span></dd>
@@ -822,7 +828,7 @@
         <span class="eyebrow">Project Verification</span>
         <h3>Checked on the deployed stack</h3>
         <ul class="verify__list">
-          <li><b>ALB serves the website</b><span>CloudScale-ALB returns the site at its DNS name over HTTP</span></li>
+          <li><b>ALB serves the website</b><span><a class="inline-link" href="http://cloudscale-alb-1130756136.ap-south-1.elb.amazonaws.com" target="_blank" rel="noopener noreferrer">cloudscale-alb-1130756136.ap-south-1.elb.amazonaws.com</a></span></li>
           <li><b>Target group has healthy targets</b><span>CloudScale-TG reports every registered instance healthy</span></li>
           <li><b>Minimum capacity held</b><span>CloudScale-ASG never drops below 2 instances</span></li>
           <li><b>CPU target tracking configured</b><span>Target value 50% on ASGAverageCPUUtilization</span></li>
@@ -1004,6 +1010,7 @@
           <div><dt>Cloud Platform</dt><dd>Amazon Web Services</dd></div>
           <div><dt>Front End</dt><dd>HTML5 · CSS3 · Vanilla JavaScript</dd></div>
           <div><dt>Region</dt><dd>ap-south-1 (Mumbai) · 2 Availability Zones</dd></div>
+          <div><dt>Live URL</dt><dd><a class="inline-link" href="http://cloudscale-alb-1130756136.ap-south-1.elb.amazonaws.com" target="_blank" rel="noopener noreferrer">cloudscale-alb-1130756136<wbr>.ap-south-1.elb.amazonaws.com</a></dd></div>
           <div><dt>Web Server</dt><dd>Apache HTTP Server on Ubuntu (t3.micro)</dd></div>
           <div><dt>Status</dt><dd><span class="badge badge--ok">Deployed and tested on AWS</span></dd></div>
         </dl>
@@ -1064,7 +1071,9 @@
       <a href="#scalability">Scalability</a>
       <a href="#monitoring">Monitoring</a>
       <a href="#verification">Verification</a>
+      <a href="#demo">Interactive Demo</a>
       <a href="#about">About</a>
+      <a href="http://cloudscale-alb-1130756136.ap-south-1.elb.amazonaws.com" target="_blank" rel="noopener noreferrer">Live Site ↗</a>
     </nav>
 
     <div class="footer__meta">

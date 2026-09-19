@@ -2075,3 +2075,67 @@ html.js .hero__visual .mini-arch > :nth-child(7) { animation-delay: 840ms; }
   .proof { grid-template-columns: 1fr; }
   .proof__step { padding: 18px; }
 }
+
+/* ==========================================================================
+   23. LIVE DEPLOYMENT LINK
+   The real Application Load Balancer URL, shown in the hero and linked from
+   the navigation, verification list, about panel and footer.
+   ========================================================================== */
+.live-url {
+  display: inline-flex;
+  flex-wrap: wrap;            /* the full URL wraps rather than being truncated */
+  align-items: center;
+  gap: 6px 12px;
+  max-width: 100%;
+  margin-top: 22px;
+  padding: 11px 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(46, 230, 168, 0.35);
+  background: linear-gradient(120deg, rgba(46, 230, 168, 0.12), rgba(34, 211, 238, 0.06));
+  transition: transform var(--t-fast), border-color var(--t-med), box-shadow var(--t-med), background var(--t-med);
+}
+.live-url:hover {
+  transform: translateY(-2px);
+  border-color: rgba(46, 230, 168, 0.6);
+  background: linear-gradient(120deg, rgba(46, 230, 168, 0.18), rgba(34, 211, 238, 0.1));
+  box-shadow: 0 16px 34px -20px var(--green);
+}
+.live-url__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--green);
+}
+.live-url__text {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.live-url__icon { display: inline-flex; flex: none; color: var(--muted); transition: transform var(--t-fast), color var(--t-fast); }
+.live-url:hover .live-url__icon { transform: translate(2px, -2px); color: var(--green); }
+
+/* The navigation call to action points off-site, so it carries the same cue */
+.nav__cta svg { transition: transform var(--t-fast); }
+.nav__cta:hover svg { transform: translate(2px, -2px); }
+
+/* Inline links inside panels and lists */
+.inline-link {
+  color: var(--cyan);
+  text-decoration: underline;
+  text-decoration-color: rgba(34, 211, 238, 0.35);
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+  transition: color var(--t-fast), text-decoration-color var(--t-fast);
+}
+.inline-link:hover { color: #7ce9fb; text-decoration-color: currentColor; }
+
+@media (max-width: 560px) {
+  .live-url { gap: 6px 10px; padding: 12px 14px; }
+  .live-url__text { font-size: 0.72rem; }
+}
