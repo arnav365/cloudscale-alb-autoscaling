@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="CloudScale — a scalable, highly available web application deployed on AWS in ap-south-1 (Mumbai) behind an Application Load Balancer, with an EC2 Auto Scaling Group using CPU target tracking at 50%." />
+<meta name="theme-color" content="#070b14" />
+<title>CloudScale — Scalable. Available. Cloud-Powered.</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2322d3ee'/%3E%3Cstop offset='1' stop-color='%23ff9900'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='%230b1220'/%3E%3Cpath d='M18 40h28a8 8 0 0 0 .6-16A12 12 0 0 0 24 22a9 9 0 0 0-6 18z' fill='url(%23g)'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="style.css" />
+<script>
+  /* Set before paint: the load-in animation only applies when JS can finish it,
+     so the page still renders fully if this script never runs. */
+  document.documentElement.classList.add('js');
+</script>
+</head>
+<body>
+
+<!-- ============================================================
+     ANIMATED BACKGROUND (decorative)
+     ============================================================ -->
+<div class="bg-layer" aria-hidden="true">
+  <div class="bg-grid"></div>
+  <div class="bg-stars"></div>
+  <div class="bg-particles">
+    <i style="--x:8%;--d:0s;--s:26s"></i><i style="--x:18%;--d:-6s;--s:32s"></i>
+    <i style="--x:29%;--d:-13s;--s:28s"></i><i style="--x:41%;--d:-3s;--s:35s"></i>
+    <i style="--x:53%;--d:-18s;--s:30s"></i><i style="--x:64%;--d:-9s;--s:38s"></i>
+    <i style="--x:76%;--d:-22s;--s:27s"></i><i style="--x:88%;--d:-15s;--s:33s"></i>
+  </div>
+  <div class="bg-orb bg-orb--1"></div>
+  <div class="bg-orb bg-orb--2"></div>
+  <div class="bg-orb bg-orb--3"></div>
+</div>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<!-- ============================================================
+     NAVIGATION
+     ============================================================ -->
+<header class="nav" id="nav">
+  <div class="container nav__inner">
+    <a class="brand" href="#home" aria-label="CloudScale home">
+      <span class="brand__mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 22h14a5 5 0 0 0 .4-10A7.5 7.5 0 0 0 9 12.5 5.5 5.5 0 0 0 8 22z" />
+          <path d="M12 26h10" />
+        </svg>
+      </span>
+      <span class="brand__text">
+        <strong>CloudScale</strong>
+        <small>Scalable. Available. Cloud-Powered.</small>
+      </span>
+    </a>
+
+    <nav class="nav__links" id="navLinks" aria-label="Primary">
+      <a href="#home" class="nav__link is-active">Home</a>
+      <a href="#architecture" class="nav__link">Architecture</a>
+      <a href="#scalability" class="nav__link">Scalability</a>
+      <a href="#availability" class="nav__link">Availability</a>
+      <a href="#monitoring" class="nav__link">Monitoring</a>
+      <a href="#verification" class="nav__link">Verification</a>
+      <a href="#about" class="nav__link">About</a>
+      <a href="#demo" class="btn btn--primary btn--sm nav__cta">Launch Demo</a>
+    </nav>
+
+    <button class="nav__toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks" aria-label="Toggle navigation menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="nav__progress" id="navProgress" aria-hidden="true"></div>
+</header>
+
+<main id="main">
+
+<!-- ============================================================
+     1. HERO
+     ============================================================ -->
+<section class="section hero" id="home">
+  <div class="container hero__grid">
+
+    <div class="hero__copy">
+      <span class="pill pill--accent boot" style="--boot:1">
+        <span class="dot-live" aria-hidden="true"></span>
+        Deployed &amp; verified on AWS — ap-south-1 (Mumbai)
+      </span>
+
+      <h1 class="hero__title boot" style="--boot:2">
+        Build Once.
+        <span class="grad-text">Scale Automatically.</span>
+      </h1>
+
+      <p class="hero__lead boot" style="--boot:3">
+        CloudScale runs on multiple Amazon EC2 instances behind an Application Load Balancer, with an
+        Auto Scaling Group that adjusts capacity automatically using CPU target tracking at 50%.
+      </p>
+
+      <div class="hero__actions boot" style="--boot:4">
+        <a href="#architecture" class="btn btn--primary">
+          Explore Architecture
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+        </a>
+        <a href="#services" class="btn btn--ghost">View AWS Stack</a>
+      </div>
+
+      <dl class="hero__stats boot" style="--boot:5">
+        <div class="statline">
+          <dt>System Status</dt>
+          <dd><span class="status-dot status-dot--ok" data-hero-status-dot></span><span data-hero-status>Operational</span></dd>
+        </div>
+        <div class="statline">
+          <dt>Instances</dt>
+          <dd><span data-hero-instances>2</span></dd>
+        </div>
+        <div class="statline">
+          <dt>Load Balancer</dt>
+          <dd><span data-hero-lb>Active</span></dd>
+        </div>
+        <div class="statline">
+          <dt>Auto Scaling</dt>
+          <dd><span data-hero-asg>Enabled</span></dd>
+        </div>
+      </dl>
+    </div>
+
+    <!-- Animated mini architecture illustration -->
+    <div class="hero__visual boot boot--visual" style="--boot:2" aria-hidden="true">
+      <div class="glass hero__card">
+        <div class="hero__card-head">
+          <span class="chip chip--ok"><span class="dot-live"></span>interactive model</span>
+          <span class="chip">ap-south-1</span>
+        </div>
+
+        <div class="mini-arch">
+          <div class="mini-node mini-node--internet">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18"/></svg>
+            Internet
+          </div>
+          <div class="mini-wire"><i class="packet"></i></div>
+
+          <div class="mini-node mini-node--alb">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v6M5 21v-5M19 21v-5M5 16h14"/><rect x="8" y="9" width="8" height="5" rx="1.5"/></svg>
+            Application Load Balancer
+          </div>
+          <div class="mini-wire"><i class="packet"></i></div>
+
+          <div class="mini-node mini-node--tg">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.2"/></svg>
+            Target Group
+          </div>
+          <div class="mini-wire mini-wire--split">
+            <span class="mini-drop mini-drop--left"></span>
+            <span class="mini-drop mini-drop--right"></span>
+            <i class="packet packet--left"></i><i class="packet packet--right"></i>
+          </div>
+
+          <div class="mini-row" data-hero-fleet>
+            <div class="mini-node mini-node--ec2">EC2-01</div>
+            <div class="mini-node mini-node--ec2">EC2-02</div>
+          </div>
+
+          <div class="mini-wire mini-wire--merge"></div>
+          <div class="mini-node mini-node--asg">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>
+            Auto Scaling Group
+          </div>
+        </div>
+
+        <div class="hero__card-foot">
+          <span>Min <b>2</b></span>
+          <span>Desired <b data-hero-desired>2</b></span>
+          <span>Max <b>4</b></span>
+          <span>CPU target <b>50%</b></span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================
+     2. PROJECT OVERVIEW
+     ============================================================ -->
+<section class="section" id="overview">
+  <div class="container">
+    <header class="section-head reveal">
+      <span class="eyebrow">Project Overview</span>
+      <h2>Scalable Web Infrastructure</h2>
+      <p>
+        Traditional web hosting runs on a single server, so a spike in traffic can overload it and take the
+        site down. CloudScale places an <strong>Application Load Balancer</strong> in front of multiple
+        <strong>Amazon EC2</strong> instances, registered in a <strong>target group</strong> that is health-checked
+        continuously, and uses an <strong>Auto Scaling Group</strong> to adjust how many instances are running
+        based on average CPU. The stack is deployed in <strong>ap-south-1 (Mumbai)</strong> across two
+        Availability Zones.
+      </p>
+    </header>
+
+    <div class="grid grid--3">
+      <article class="glass card card--hover reveal">
+        <div class="card__icon card__icon--cyan">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v5"/><path d="M4 21v-4M12 21v-4M20 21v-4"/><path d="M4 17h16"/><rect x="8.5" y="8" width="7" height="5" rx="1.5"/></svg>
+        </div>
+        <h3>Application Load Balancer</h3>
+        <p>A single public entry point (<code>CloudScale-ALB</code>) that spreads HTTP requests across the fleet.</p>
+        <ul class="ticks">
+          <li>Distributes incoming traffic</li>
+          <li>Health-checks every registered target</li>
+          <li>Routes requests to healthy instances only</li>
+        </ul>
+      </article>
+
+      <article class="glass card card--hover reveal">
+        <div class="card__icon card__icon--orange">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2.5"/><rect x="8.5" y="8.5" width="7" height="7" rx="1.2"/><path d="M9 1.5v2.5M15 1.5v2.5M9 20v2.5M15 20v2.5M1.5 9H4M1.5 15H4M20 9h2.5M20 15h2.5"/></svg>
+        </div>
+        <h3>Amazon EC2</h3>
+        <p>Ubuntu <code>t3.micro</code> servers running Apache. Every instance serves the identical site.</p>
+        <ul class="ticks">
+          <li>Launched from CloudScale-Launch-Template</li>
+          <li>Spread across two Availability Zones</li>
+          <li>Scales horizontally, never vertically</li>
+        </ul>
+      </article>
+
+      <article class="glass card card--hover reveal">
+        <div class="card__icon card__icon--violet">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3.5V9h-5.5"/><path d="M12 8v4l3 2"/></svg>
+        </div>
+        <h3>EC2 Auto Scaling</h3>
+        <p><code>CloudScale-ASG</code> keeps the fleet at the right size and replaces instances that fail health checks.</p>
+        <ul class="ticks">
+          <li>Minimum 2 · desired 2 · maximum 4</li>
+          <li>Target tracking on 50% average CPU</li>
+          <li>Verified scale-out 2 → 3 and scale-in 3 → 2</li>
+        </ul>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     3. AWS ARCHITECTURE
+     ============================================================ -->
+<section class="section section--alt" id="architecture">
+  <div class="container">
+    <header class="section-head reveal">
+      <span class="eyebrow">Infrastructure Design</span>
+      <h2>AWS Architecture</h2>
+      <p>Hover or tap any component to see what it does. Traffic flows top to bottom, from the public internet down to the Auto Scaling Group that keeps the fleet healthy.</p>
+    </header>
+
+    <div class="arch-wrap reveal">
+      <!-- Diagram -->
+      <div class="glass arch" id="archDiagram">
+        <div class="arch__label">VPC · public subnets in ap-south-1a and ap-south-1b</div>
+
+        <!-- Tier 1: Internet -->
+        <div class="arch__tier">
+          <button class="arch-node arch-node--internet" data-node="internet" data-title="Internet" data-desc="Public users send HTTP requests to the DNS name of CloudScale-ALB." aria-describedby="archInfo">
+            <span class="arch-node__icon">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg>
+            </span>
+            <span class="arch-node__name">Internet</span>
+            <span class="arch-node__meta">Public users</span>
+          </button>
+        </div>
+
+        <div class="wire wire--single" data-wire="internet-alb"><i class="packet"></i><i class="packet packet--delay"></i></div>
+
+        <!-- Tier 2: ALB -->
+        <div class="arch__tier">
+          <button class="arch-node arch-node--alb" data-node="alb" data-title="Application Load Balancer" data-desc="CloudScale-ALB accepts HTTP traffic on port 80 and forwards it to the CloudScale-TG target group. It is internet-facing and spans both Availability Zones." aria-describedby="archInfo">
+            <span class="arch-node__icon">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 2v5"/><rect x="7.5" y="7" width="9" height="6" rx="1.6"/><path d="M5 22v-4M19 22v-4M5 18h14M12 13v5"/></svg>
+            </span>
+            <span class="arch-node__name">Application Load Balancer</span>
+            <span class="arch-node__meta">CloudScale-ALB · HTTP listener :80</span>
+            <span class="alb-activity" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+            <span class="badge badge--ok" data-arch-lb>ACTIVE</span>
+          </button>
+        </div>
+
+        <div class="wire wire--single" data-wire="alb-tg"><i class="packet"></i><i class="packet packet--delay"></i></div>
+
+        <!-- Tier 3: Target Group -->
+        <div class="arch__tier">
+          <button class="arch-node arch-node--tg" data-node="tg" data-title="Target Group" data-desc="CloudScale-TG holds the registered EC2 instances and health-checks them on HTTP :80. Only targets reporting healthy receive traffic, and the Auto Scaling Group registers new instances here automatically." aria-describedby="archInfo">
+            <span class="arch-node__icon">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.6"/><circle cx="12" cy="12" r="1.2"/></svg>
+            </span>
+            <span class="arch-node__name">Target Group</span>
+            <span class="arch-node__meta">CloudScale-TG · HTTP :80 · health check /</span>
+            <span class="badge badge--ok" data-arch-tg>HEALTHY TARGETS</span>
+          </button>
+        </div>
+
+        <!-- Split connector -->
+        <div class="wire wire--split" data-wire="tg-ec2">
+          <span class="wire__stem"></span>
+          <span class="wire__bar"></span>
+          <span class="wire__drop wire__drop--left"><i class="packet"></i></span>
+          <span class="wire__drop wire__drop--right"><i class="packet packet--delay"></i></span>
+        </div>
+
+        <!-- Tier 3: EC2 fleet -->
+        <div class="arch__tier arch__tier--fleet" id="archFleet">
+          <button class="arch-node arch-node--ec2 is-healthy" data-node="ec2" data-instance="EC2-01" data-title="Amazon EC2 Instance" data-desc="Ubuntu t3.micro instance running Apache, launched from CloudScale-Launch-Template and registered automatically in CloudScale-TG." aria-describedby="archInfo">
+            <span class="arch-node__icon">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="4.5" y="4.5" width="15" height="15" rx="2.2"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 2.5v2M15 2.5v2M9 19.5v2M15 19.5v2M2.5 9h2M2.5 15h2M19.5 9h2M19.5 15h2"/></svg>
+            </span>
+            <span class="arch-node__name">EC2 Instance 1</span>
+            <span class="arch-node__meta">t3.micro · ap-south-1a</span>
+            <span class="badge badge--ok" data-health>HEALTHY</span>
+          </button>
+
+          <button class="arch-node arch-node--ec2 is-healthy" data-node="ec2" data-instance="EC2-02" data-title="Amazon EC2 Instance" data-desc="Ubuntu t3.micro instance running Apache, launched from CloudScale-Launch-Template and registered automatically in CloudScale-TG." aria-describedby="archInfo">
+            <span class="arch-node__icon">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="4.5" y="4.5" width="15" height="15" rx="2.2"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 2.5v2M15 2.5v2M9 19.5v2M15 19.5v2M2.5 9h2M2.5 15h2M19.5 9h2M19.5 15h2"/></svg>
+            </span>
+            <span class="arch-node__name">EC2 Instance 2</span>
+            <span class="arch-node__meta">t3.micro · ap-south-1b</span>
+            <span class="badge badge--ok" data-health>HEALTHY</span>
+          </button>
+        </div>
+
+        <!-- Template: the fleet is re-rendered from the shared simulation state -->
+        <template id="ec2NodeTemplate">
+          <button class="arch-node arch-node--ec2 is-healthy" data-node="ec2" data-title="Amazon EC2 Instance" data-desc="Runs the web application on Apache. Each instance is launched from the same Launch Template." aria-describedby="archInfo">
+            <span class="arch-node__icon">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="4.5" y="4.5" width="15" height="15" rx="2.2"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 2.5v2M15 2.5v2M9 19.5v2M15 19.5v2M2.5 9h2M2.5 15h2M19.5 9h2M19.5 15h2"/></svg>
+            </span>
+            <span class="arch-node__name">EC2 Instance</span>
+            <span class="arch-node__meta">t3.micro</span>
+            <span class="badge badge--ok" data-health>HEALTHY</span>
+          </button>
+        </template>
+
+        <!-- Merge connector -->
+        <div class="wire wire--merge" data-wire="ec2-asg">
+          <span class="wire__drop wire__drop--left"></span>
+          <span class="wire__drop wire__drop--right"></span>
+          <span class="wire__bar"></span>
+          <span class="wire__stem"><i class="packet"></i></span>
+        </div>
+
+        <!-- Tier 4: ASG -->
+        <div class="arch__tier">
+          <button class="arch-node arch-node--asg" data-node="asg" data-title="Auto Scaling Group" data-desc="CloudScale-ASG keeps capacity between 2 and 4 instances using a target tracking policy set to 50% average CPU, and replaces any instance that fails its health check." aria-describedby="archInfo">
+            <span class="arch-node__icon">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3.5V9h-5.5"/></svg>
+            </span>
+            <span class="arch-node__name">Auto Scaling Group</span>
+            <span class="arch-node__meta">CloudScale-ASG · min 2 · desired <b data-arch-desired>2</b> · max 4 · CPU target 50%</span>
+            <span class="badge badge--info">ENABLED</span>
+            <svg class="asg-boundary" aria-hidden="true"><rect width="100%" height="100%" rx="16" /></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Side panel: component info + request flow -->
+      <aside class="arch-side">
+        <div class="glass panel" id="archInfo" aria-live="polite">
+          <span class="eyebrow">Component</span>
+          <h3 id="archInfoTitle">Application Load Balancer</h3>
+          <p id="archInfoDesc">CloudScale-ALB accepts HTTP traffic on port 80 and forwards it to the CloudScale-TG target group. It is internet-facing and spans both Availability Zones.</p>
+          <p class="panel__hint">Hover, tap or focus a component in the diagram.</p>
+        </div>
+
+        <div class="glass panel">
+          <span class="eyebrow">Request Flow</span>
+          <ol class="flow" id="requestFlow">
+            <li class="flow__step" data-target="internet"><span class="flow__num">1</span><span>User opens the DNS name of CloudScale-ALB over HTTP.</span></li>
+            <li class="flow__step" data-target="alb"><span class="flow__num">2</span><span>The request reaches the Application Load Balancer on port 80.</span></li>
+            <li class="flow__step" data-target="tg"><span class="flow__num">3</span><span>The listener forwards it to the CloudScale-TG target group.</span></li>
+            <li class="flow__step" data-target="tg"><span class="flow__num">4</span><span>The target group routes only to instances passing the health check.</span></li>
+            <li class="flow__step" data-target="ec2"><span class="flow__num">5</span><span>A healthy EC2 instance serves the page from Apache.</span></li>
+            <li class="flow__step" data-target="asg"><span class="flow__num">6</span><span>CloudScale-ASG adjusts capacity as average CPU changes.</span></li>
+          </ol>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     4. AWS SERVICES
+     ============================================================ -->
+<section class="section" id="services">
+  <div class="container">
+    <header class="section-head reveal">
+      <span class="eyebrow">Cloud Stack</span>
+      <h2>AWS Services Used</h2>
+      <p>Every service listed here is actually provisioned in the deployed stack in ap-south-1. Nothing else is used.</p>
+    </header>
+
+    <div class="grid grid--3 grid--services">
+      <article class="glass card card--hover reveal">
+        <div class="card__icon card__icon--orange">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4.5" y="4.5" width="15" height="15" rx="2.2"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 2.5v2M15 2.5v2M9 19.5v2M15 19.5v2M2.5 9h2M2.5 15h2M19.5 9h2M19.5 15h2"/></svg>
+        </div>
+        <h3>Amazon EC2</h3>
+        <p>Virtual servers launched from <code>CloudScale-Launch-Template</code> — Ubuntu, instance type <code>t3.micro</code>.</p>
+        <p class="card__purpose"><span>In this project</span> Each instance runs Apache and serves the identical CloudScale site from <code>/var/www/html</code>.</p>
+      </article>
+
+      <article class="glass card card--hover reveal">
+        <div class="card__icon card__icon--cyan">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2v5"/><rect x="7.5" y="7" width="9" height="6" rx="1.6"/><path d="M5 22v-4M19 22v-4M5 18h14M12 13v5"/></svg>
+        </div>
+        <h3>Application Load Balancer</h3>
+        <p><code>CloudScale-ALB</code> — an internet-facing Layer 7 load balancer with an HTTP listener on port 80.</p>
+        <p class="card__purpose"><span>In this project</span> The single public endpoint. The website is reached through the ALB DNS name.</p>
+      </article>
+
+      <article class="glass card card--hover reveal">
+        <div class="card__icon card__icon--violet">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3.5V9h-5.5"/><path d="M8 14l3-3 2.5 2.5L17 10"/></svg>
+        </div>
+        <h3>EC2 Auto Scaling</h3>
+        <p><code>CloudScale-ASG</code> — minimum 2, desired 2, maximum 4, with a target tracking scaling policy.</p>
+        <p class="card__purpose"><span>In this project</span> Holds capacity at 2 instances and scales out when average CPU passes the 50% target.</p>
+      </article>
+
+      <article class="glass card card--hover reveal">
+        <div class="card__icon card__icon--green">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.6"/><circle cx="12" cy="12" r="1.2"/></svg>
+        </div>
+        <h3>Target Group</h3>
+        <p><code>CloudScale-TG</code> — protocol HTTP on port 80, health check path <code>/</code>.</p>
+        <p class="card__purpose"><span>In this project</span> Holds the registered instances. The ASG registers and deregisters targets automatically.</p>
+      </article>
+
+      <article class="glass card card--hover reveal">
+        <div class="card__icon card__icon--cyan">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13h4l2.5-6 4 12 2.5-6h5"/></svg>
+        </div>
+        <h3>Amazon CloudWatch</h3>
+        <p>Collects the <code>CPUUtilization</code> metric published by every EC2 instance in the group.</p>
+        <p class="card__purpose"><span>In this project</span> The target tracking policy creates and manages its own CloudWatch alarms on <code>ASGAverageCPUUtilization</code>. No custom dashboards or manual alarms were added.</p>
+      </article>
+
+      <article class="glass card card--hover reveal">
+        <div class="card__icon card__icon--violet">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M8 5v14M8 12h13"/></svg>
+        </div>
+        <h3>Amazon VPC</h3>
+        <p>The virtual network containing the load balancer and the instances.</p>
+        <p class="card__purpose"><span>In this project</span> Public subnets in <code>ap-south-1a</code> and <code>ap-south-1b</code>, so the ALB and the ASG both span two Availability Zones.</p>
+      </article>
+
+      <article class="glass card card--hover reveal">
+        <div class="card__icon card__icon--red">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5 4.5 6v6c0 4.6 3.1 8.4 7.5 9.5 4.4-1.1 7.5-4.9 7.5-9.5V6z"/><path d="m9.2 12 2 2 3.6-3.8"/></svg>
+        </div>
+        <h3>Security Groups</h3>
+        <p>Stateful virtual firewalls. <code>CloudScale-EC2-SG</code> is attached to every instance in the group.</p>
+        <p class="card__purpose"><span>In this project</span> Allows HTTP to the load balancer, and SSH only from the administrator IP used for setup.</p>
+      </article>
+
+      <article class="glass card card--hover card--note reveal">
+        <h3>Scope note</h3>
+        <p>
+          This project deliberately stops at compute, networking and load balancing. No database, storage,
+          CDN, DNS or serverless service is part of the deployment — the goal is to demonstrate
+          <strong>horizontal scaling and high availability</strong> on stateless web servers. The site is
+          served over HTTP at the ALB DNS name; no custom domain or TLS certificate is configured.
+        </p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     5. SCALABILITY
+     ============================================================ -->
+<section class="section section--alt" id="scalability">
+  <div class="container">
+    <header class="section-head reveal">
+      <span class="eyebrow">Horizontal Scaling</span>
+      <h2>Designed to Scale</h2>
+      <p>
+        Instead of making one server bigger (vertical scaling), CloudScale adds more identical servers
+        (horizontal scaling). <code>CloudScale-ASG</code> tracks average CPU across the group: when it rises
+        above the 50% target, Auto Scaling launches additional <code>t3.micro</code> instances, and when it
+        falls back, the extra instances are terminated. This behaviour was
+        <a href="#verification">tested on the live deployment</a> — 2 → 3 on load, 3 → 2 on recovery.
+      </p>
+    </header>
+
+    <div class="scale-stages reveal" id="scaleStages">
+      <article class="glass stage" data-stage="1">
+        <span class="stage__tag">Low Traffic</span>
+        <div class="stage__servers" data-servers="2"></div>
+        <p class="stage__count"><b>2</b> EC2 Instances</p>
+        <p class="stage__note">Desired capacity, and also the ASG minimum.</p>
+      </article>
+      <article class="glass stage" data-stage="2">
+        <span class="stage__tag">Medium Traffic</span>
+        <div class="stage__servers" data-servers="3"></div>
+        <p class="stage__count"><b>3</b> EC2 Instances</p>
+        <p class="stage__note">Average CPU above 50% — the observed scale-out.</p>
+      </article>
+      <article class="glass stage" data-stage="3">
+        <span class="stage__tag">High Traffic</span>
+        <div class="stage__servers" data-servers="4"></div>
+        <p class="stage__count"><b>4+</b> EC2 Instances</p>
+        <p class="stage__note">Fleet can grow to the maximum of 4 instances.</p>
+      </article>
+    </div>
+
+    <div class="glass sim-bar reveal">
+      <div class="sim-bar__info">
+        <span class="badge badge--sim">Demo / Simulated Data</span>
+        <p>A front-end model of the scaling behaviour — cycle the traffic level to watch the fleet grow and
+           shrink. For the measured AWS result, see <a href="#verification">Auto Scaling Demonstration</a>.</p>
+      </div>
+      <div class="sim-bar__controls">
+        <div class="metric-inline">
+          <span>Traffic</span><b data-traffic-label>Normal</b>
+        </div>
+        <div class="metric-inline">
+          <span>Instances</span><b data-instance-count>2</b>
+        </div>
+        <button class="btn btn--primary" id="btnSimulateTraffic">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l5-6 4 3 5-7"/><path d="M17 7h4v4"/></svg>
+          Simulate Traffic
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     6. HIGH AVAILABILITY
+     ============================================================ -->
+<section class="section" id="availability">
+  <div class="container">
+    <header class="section-head reveal">
+      <span class="eyebrow">Resilience</span>
+      <h2>Built for High Availability</h2>
+      <p>
+        The Application Load Balancer continuously distributes traffic across available instances and performs
+        health checks to help route requests away from unhealthy targets.
+      </p>
+    </header>
+
+    <div class="grid grid--4">
+      <article class="glass card card--sm card--hover reveal">
+        <div class="card__icon card__icon--green">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2.5-6 4 12 2.5-6h5"/></svg>
+        </div>
+        <h3>Health Checks</h3>
+        <p>CloudScale-TG probes <code>/</code> on each instance over HTTP :80.</p>
+      </article>
+      <article class="glass card card--sm card--hover reveal">
+        <div class="card__icon card__icon--cyan">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v6"/><path d="M6 20v-4M18 20v-4M6 16h12"/><path d="m9 13 3-3 3 3"/></svg>
+        </div>
+        <h3>Traffic Distribution</h3>
+        <p>Requests are balanced across all targets that are passing checks.</p>
+      </article>
+      <article class="glass card card--sm card--hover reveal">
+        <div class="card__icon card__icon--orange">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="8" height="7" rx="1.6"/><rect x="13" y="4" width="8" height="7" rx="1.6"/><rect x="8" y="14" width="8" height="7" rx="1.6"/></svg>
+        </div>
+        <h3>Multiple Instances</h3>
+        <p>Instances run in ap-south-1a and ap-south-1b, so one AZ issue is survivable.</p>
+      </article>
+      <article class="glass card card--sm card--hover reveal">
+        <div class="card__icon card__icon--violet">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5 4.5 6v6c0 4.6 3.1 8.4 7.5 9.5 4.4-1.1 7.5-4.9 7.5-9.5V6z"/><path d="M12 8v4"/><path d="M12 15.5h.01"/></svg>
+        </div>
+        <h3>Fault Tolerance</h3>
+        <p>An unhealthy instance stops receiving traffic and is replaced by Auto Scaling.</p>
+      </article>
+    </div>
+
+    <div class="glass ha-demo reveal">
+      <div class="ha-demo__head">
+        <div>
+          <span class="badge badge--sim">Demo / Simulated Data</span>
+          <h3>Health Check Simulation</h3>
+          <p>Take an instance down and watch the load balancer route around it.</p>
+        </div>
+        <button class="btn btn--danger" id="btnSimulateFailure">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20z"/><path d="M12 9v5"/><path d="M12 17h.01"/></svg>
+          <span id="btnFailureLabel">Simulate Instance Failure</span>
+        </button>
+      </div>
+
+      <div class="ha-demo__body">
+        <div class="ha-lb">
+          <span class="ha-lb__icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2v5"/><rect x="7.5" y="7" width="9" height="6" rx="1.6"/><path d="M5 22v-4M19 22v-4M5 18h14M12 13v5"/></svg></span>
+          <div>
+            <b>Application Load Balancer</b>
+            <small>Routing to <span data-ha-healthy-count>2</span> healthy target(s)</small>
+          </div>
+        </div>
+
+        <ul class="ha-targets" id="haTargets">
+          <li class="ha-target is-healthy" data-instance="EC2-01">
+            <span class="ha-target__pulse"></span>
+            <div class="ha-target__id">
+              <b>EC2-01</b><small>t3.micro · ap-south-1a</small>
+            </div>
+            <div class="ha-target__meter"><span style="width:50%"></span></div>
+            <span class="badge badge--ok" data-health>Healthy</span>
+          </li>
+          <li class="ha-target is-healthy" data-instance="EC2-02">
+            <span class="ha-target__pulse"></span>
+            <div class="ha-target__id">
+              <b>EC2-02</b><small>t3.micro · ap-south-1b</small>
+            </div>
+            <div class="ha-target__meter"><span style="width:50%"></span></div>
+            <span class="badge badge--ok" data-health>Healthy</span>
+          </li>
+        </ul>
+
+        <p class="ha-message" id="haMessage" role="status">All targets are passing health checks. Traffic is evenly distributed.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     7. MONITORING DASHBOARD
+     ============================================================ -->
+<section class="section section--alt" id="monitoring">
+  <div class="container">
+    <header class="section-head reveal">
+      <span class="eyebrow">Observability</span>
+      <h2>Live Infrastructure Overview</h2>
+      <p>A monitoring console view of the fleet. <strong>All values on this dashboard are simulated in the browser</strong> — the real metrics live in Amazon CloudWatch. The capacity settings shown (min 2 · desired 2 · max 4) are the ones actually configured on <code>CloudScale-ASG</code>.</p>
+    </header>
+
+    <div class="console reveal">
+      <div class="console__bar">
+        <span class="console__dots"><i></i><i></i><i></i></span>
+        <span class="console__title">cloudscale · infrastructure monitor</span>
+        <span class="badge badge--sim">Demo / Simulated Data</span>
+      </div>
+
+      <div class="console__body">
+        <div class="kpi-grid">
+          <div class="glass kpi reveal">
+            <span class="kpi__label">Load Balancer</span>
+            <span class="kpi__value kpi__value--ok" data-kpi-lb>Active</span>
+            <span class="kpi__sub">listener :80 → target group</span>
+          </div>
+          <div class="glass kpi reveal">
+            <span class="kpi__label">Healthy Instances</span>
+            <span class="kpi__value" data-kpi-healthy>2</span>
+            <span class="kpi__sub">passing health checks</span>
+          </div>
+          <div class="glass kpi reveal">
+            <span class="kpi__label">Desired Capacity</span>
+            <span class="kpi__value" data-kpi-desired>2</span>
+            <span class="kpi__sub">set by scaling policy</span>
+          </div>
+          <div class="glass kpi reveal">
+            <span class="kpi__label">Minimum Capacity</span>
+            <span class="kpi__value">2</span>
+            <span class="kpi__sub">never scales below</span>
+          </div>
+          <div class="glass kpi reveal">
+            <span class="kpi__label">Maximum Capacity</span>
+            <span class="kpi__value">4</span>
+            <span class="kpi__sub">upper scaling limit</span>
+          </div>
+          <div class="glass kpi reveal">
+            <span class="kpi__label">Traffic</span>
+            <span class="kpi__value" data-kpi-traffic>Normal</span>
+            <span class="kpi__sub">requests per minute trend</span>
+          </div>
+        </div>
+
+        <div class="charts">
+          <div class="glass chart reveal">
+            <div class="chart__head">
+              <h3>Requests / min</h3>
+              <b data-chart-requests>0</b>
+            </div>
+            <svg class="chart__svg" viewBox="0 0 300 110" preserveAspectRatio="none" role="img" aria-label="Simulated request rate over time">
+              <defs>
+                <linearGradient id="reqFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.45" />
+                  <stop offset="100%" stop-color="#22d3ee" stop-opacity="0" />
+                </linearGradient>
+              </defs>
+              <g class="chart__grid">
+                <line x1="0" y1="27" x2="300" y2="27" /><line x1="0" y1="55" x2="300" y2="55" /><line x1="0" y1="83" x2="300" y2="83" />
+              </g>
+              <g class="chart__shift" id="reqShift">
+                <polygon id="reqArea" fill="url(#reqFill)" points="" />
+                <polyline id="reqLine" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="" />
+              </g>
+            </svg>
+            <span class="chart__foot">rolling 60-second window</span>
+          </div>
+
+          <div class="glass chart reveal">
+            <div class="chart__head">
+              <h3>Active Instances</h3>
+              <b data-chart-instances>2</b>
+            </div>
+            <div class="bars" id="instanceBars" role="img" aria-label="Simulated active instance count over time"></div>
+            <span class="chart__foot">capacity history · min 2 / max 4</span>
+          </div>
+
+          <div class="glass chart reveal">
+            <div class="chart__head">
+              <h3>Traffic Level</h3>
+              <b data-chart-traffic>Normal</b>
+            </div>
+            <div class="gauge">
+              <div class="gauge__track"><span class="gauge__fill" id="gaugeFill"></span></div>
+              <div class="gauge__scale"><span>Low</span><span>Normal</span><span>High</span><span>Peak</span></div>
+            </div>
+            <ul class="chart__legend">
+              <li><i class="dot dot--cyan"></i>CPU average <b data-chart-cpu>28%</b></li>
+              <li><i class="dot dot--orange"></i>Scaling policy <b>Target 50% CPU</b></li>
+            </ul>
+            <span class="chart__foot">target tracking · ASGAverageCPUUtilization 50%</span>
+          </div>
+        </div>
+
+        <div class="glass log reveal">
+          <div class="log__head"><span class="dot-live"></span> Auto Scaling activity</div>
+          <ul class="log__list" id="eventLog" aria-live="polite"></ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="metrics-explain">
+      <article class="glass panel reveal">
+        <span class="eyebrow">How scaling decisions are made</span>
+        <h3>CloudWatch metrics → target tracking</h3>
+        <ol class="steps-list">
+          <li><b>Every instance publishes <code>CPUUtilization</code> to CloudWatch</b> at a five-minute interval by default (one minute with detailed monitoring).</li>
+          <li><b>CloudWatch aggregates it per Auto Scaling group</b> as <code>ASGAverageCPUUtilization</code> — the average across all InService instances.</li>
+          <li><b>The target tracking policy holds that average at 50%.</b> Creating the policy created the CloudWatch alarms behind it automatically; they were not configured by hand.</li>
+          <li><b>Above target</b>, the alarm fires and the group launches instances, up to the maximum of 4.</li>
+          <li><b>Below target</b>, the low alarm fires and the group terminates instances, down to the minimum of 2.</li>
+        </ol>
+      </article>
+
+      <article class="glass panel reveal">
+        <span class="eyebrow">Why target tracking</span>
+        <h3>One number to reason about</h3>
+        <p>
+          A target tracking policy needs a single setting — the CPU percentage to hold — and AWS works out
+          how many instances that requires. Compared with writing step or simple scaling policies by hand,
+          there are no thresholds, cooldown values or alarm actions to tune, which makes the behaviour easy
+          to explain and easy to reproduce in a demonstration.
+        </p>
+        <ul class="ticks ticks--lg">
+          <li>Metric: <code>ASGAverageCPUUtilization</code></li>
+          <li>Target value: <strong>50%</strong></li>
+          <li>Capacity bounds: <strong>min 2 · desired 2 · max 4</strong></li>
+          <li>Instances added and removed automatically in both directions</li>
+        </ul>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     8. AUTO SCALING DEMONSTRATION — VERIFIED ON AWS
+     ============================================================ -->
+<section class="section" id="verification">
+  <div class="container">
+    <header class="section-head reveal">
+      <span class="eyebrow">Verified on AWS</span>
+      <h2>Auto Scaling Demonstration</h2>
+      <p>
+        The deployed stack was load-tested in <strong>ap-south-1</strong>. CPU load was generated on the
+        running instances with <code>stress-ng</code> until the group average passed the 50% target, then
+        stopped. Auto Scaling handled both directions on its own.
+        <strong>These are observed results from the live deployment, not the browser simulation.</strong>
+      </p>
+    </header>
+
+    <ol class="proof">
+      <li class="glass proof__step reveal">
+        <span class="proof__tag">Step 1 · Steady state</span>
+        <p class="proof__count"><b>2</b> <span>healthy instances</span></p>
+        <p class="proof__text">CloudScale-ASG at its desired capacity of 2. Both targets <strong>InService</strong> and
+        <strong>Healthy</strong> in CloudScale-TG, one in each Availability Zone.</p>
+      </li>
+
+      <li class="glass proof__step proof__step--load reveal">
+        <span class="proof__tag">Step 2 · Load generated</span>
+        <p class="proof__count"><b>50%+</b> <span>average CPU</span></p>
+        <p class="proof__text"><code>stress-ng</code> was run on the instances until
+        <code>ASGAverageCPUUtilization</code> rose above the policy target of 50%.</p>
+      </li>
+
+      <li class="glass proof__step proof__step--out reveal">
+        <span class="proof__tag">Step 3 · Scale-out</span>
+        <p class="proof__count"><b>2 <span class="proof__arrow">→</span> 3</b> <span>instances</span></p>
+        <p class="proof__text">Auto Scaling launched a third <code>t3.micro</code> without any manual action.
+        All three instances reached <strong>InService / Healthy</strong> and began receiving traffic from the ALB.</p>
+      </li>
+
+      <li class="glass proof__step reveal">
+        <span class="proof__tag">Step 4 · Load stopped</span>
+        <p class="proof__count"><b>Normal</b> <span>CPU</span></p>
+        <p class="proof__text">The stress test was stopped and the group average fell back below the target value.</p>
+      </li>
+
+      <li class="glass proof__step proof__step--in reveal">
+        <span class="proof__tag">Step 5 · Scale-in</span>
+        <p class="proof__count"><b>3 <span class="proof__arrow">→</span> 2</b> <span>instances</span></p>
+        <p class="proof__text">Auto Scaling terminated the extra instance and returned the group to a desired
+        capacity of 2 — the configured minimum, so it scaled no further.</p>
+      </li>
+    </ol>
+
+    <div class="verify">
+      <article class="glass panel reveal">
+        <span class="eyebrow">Project Verification</span>
+        <h3>Checked on the deployed stack</h3>
+        <ul class="verify__list">
+          <li><b>ALB serves the website</b><span>CloudScale-ALB returns the site at its DNS name over HTTP</span></li>
+          <li><b>Target group has healthy targets</b><span>CloudScale-TG reports every registered instance healthy</span></li>
+          <li><b>Minimum capacity held</b><span>CloudScale-ASG never drops below 2 instances</span></li>
+          <li><b>CPU target tracking configured</b><span>Target value 50% on ASGAverageCPUUtilization</span></li>
+          <li><b>Scale-out tested</b><span>2 → 3 instances under generated CPU load</span></li>
+          <li><b>Scale-in tested</b><span>3 → 2 instances once load was removed</span></li>
+          <li><b>Multi-AZ deployment verified</b><span>Instances running in ap-south-1a and ap-south-1b</span></li>
+        </ul>
+      </article>
+
+      <article class="glass panel reveal">
+        <span class="eyebrow">Configuration in Use</span>
+        <h3>CloudScale-ASG</h3>
+        <dl class="spec">
+          <div><dt>Region</dt><dd>ap-south-1 (Mumbai)</dd></div>
+          <div><dt>Availability Zones</dt><dd>ap-south-1a · ap-south-1b</dd></div>
+          <div><dt>Launch Template</dt><dd>CloudScale-Launch-Template</dd></div>
+          <div><dt>Instance Type</dt><dd>t3.micro (Ubuntu + Apache)</dd></div>
+          <div><dt>Capacity</dt><dd>Minimum 2 · Desired 2 · Maximum 4</dd></div>
+          <div><dt>Scaling Policy</dt><dd>Target tracking — 50% average CPU</dd></div>
+          <div><dt>Load Balancer</dt><dd>CloudScale-ALB · HTTP :80</dd></div>
+          <div><dt>Target Group</dt><dd>CloudScale-TG · HTTP :80 · health check /</dd></div>
+          <div><dt>Security Group</dt><dd>CloudScale-EC2-SG</dd></div>
+        </dl>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     9. DEPLOYMENT WORKFLOW
+     ============================================================ -->
+<section class="section" id="deployment">
+  <div class="container">
+    <header class="section-head reveal">
+      <span class="eyebrow">How it was built</span>
+      <h2>Deployment Workflow</h2>
+      <p>The ten steps used to take this website from a local folder to the running, load-balanced and auto-scaled deployment in ap-south-1.</p>
+    </header>
+
+    <ol class="timeline">
+      <li class="timeline__item reveal"><span class="timeline__num">01</span><div class="glass timeline__card"><h3>Prepare the network</h3><p>Public subnets in ap-south-1a and ap-south-1b, with internet access for the instances.</p></div></li>
+      <li class="timeline__item reveal"><span class="timeline__num">02</span><div class="glass timeline__card"><h3>Create security groups</h3><p>One for CloudScale-ALB (HTTP from the internet) and CloudScale-EC2-SG for the instances.</p></div></li>
+      <li class="timeline__item reveal"><span class="timeline__num">03</span><div class="glass timeline__card"><h3>Launch a base EC2 instance</h3><p>Ubuntu t3.micro, then install Apache and copy the site into <code>/var/www/html</code>.</p></div></li>
+      <li class="timeline__item reveal"><span class="timeline__num">04</span><div class="glass timeline__card"><h3>Create CloudScale-Launch-Template</h3><p>Ubuntu AMI, t3.micro, CloudScale-EC2-SG and user data that installs Apache and deploys the site.</p></div></li>
+      <li class="timeline__item reveal"><span class="timeline__num">05</span><div class="glass timeline__card"><h3>Create CloudScale-TG</h3><p>Target type instance, protocol HTTP on port 80, health check path <code>/</code>.</p></div></li>
+      <li class="timeline__item reveal"><span class="timeline__num">06</span><div class="glass timeline__card"><h3>Create CloudScale-ALB</h3><p>Internet-facing, both Availability Zones, HTTP listener on :80 forwarding to CloudScale-TG.</p></div></li>
+      <li class="timeline__item reveal"><span class="timeline__num">07</span><div class="glass timeline__card"><h3>Create CloudScale-ASG</h3><p>Min 2, desired 2, max 4, both AZs, attached to CloudScale-TG with ELB health checks.</p></div></li>
+      <li class="timeline__item reveal"><span class="timeline__num">08</span><div class="glass timeline__card"><h3>Add the scaling policy</h3><p>Target tracking on ASGAverageCPUUtilization with a target value of 50%.</p></div></li>
+      <li class="timeline__item reveal"><span class="timeline__num">09</span><div class="glass timeline__card"><h3>Test the application</h3><p>Open the ALB DNS name and confirm both targets are healthy and serving.</p></div></li>
+      <li class="timeline__item reveal"><span class="timeline__num">10</span><div class="glass timeline__card"><h3>Test Auto Scaling</h3><p>Generate CPU load with <code>stress-ng</code>, observe scale-out 2 → 3, stop the load, observe scale-in 3 → 2.</p></div></li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============================================================
+     9. SECURITY
+     ============================================================ -->
+<section class="section section--alt" id="security">
+  <div class="container">
+    <header class="section-head reveal">
+      <span class="eyebrow">Defence in Depth</span>
+      <h2>Network Security</h2>
+      <p>
+        Security groups act as virtual firewalls: they control which inbound and outbound traffic is allowed
+        to reach the load balancer and the instances. They are stateful, so a permitted inbound request is
+        automatically allowed to respond. <code>CloudScale-EC2-SG</code> is the group attached to every
+        instance launched by the Auto Scaling group.
+      </p>
+    </header>
+
+    <div class="sec-grid">
+      <div class="glass panel reveal">
+        <span class="eyebrow">Inbound Rules</span>
+        <h3>Example rule set</h3>
+        <table class="rules">
+          <caption class="sr-only">Example security group inbound rules</caption>
+          <thead><tr><th>Type</th><th>Port</th><th>Source</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td><span class="tag tag--cyan">HTTP</span></td><td>80</td><td>0.0.0.0/0</td><td>Public web traffic reaching CloudScale-ALB</td></tr>
+            <tr><td><span class="tag tag--cyan">HTTP</span></td><td>80</td><td>ALB security group</td><td>Load balancer to the instances</td></tr>
+            <tr><td><span class="tag tag--orange">SSH</span></td><td>22</td><td>My IP only</td><td>Administrative access during setup</td></tr>
+          </tbody>
+        </table>
+        <p class="panel__hint">Only these ports are opened. Port 443 is not in use — the site is served over HTTP at the ALB DNS name, so no TLS certificate is configured.</p>
+      </div>
+
+      <div class="glass panel reveal">
+        <span class="eyebrow">Practices Applied</span>
+        <h3>Keeping the surface small</h3>
+        <ul class="ticks ticks--lg">
+          <li><code>CloudScale-EC2-SG</code> accepts port 80 <strong>only from the ALB security group</strong>, not from the internet.</li>
+          <li>SSH on port 22 is restricted to a single administrator IP address, never <code>0.0.0.0/0</code>.</li>
+          <li>Unused ports and protocols are left closed by default — security groups deny anything not explicitly allowed.</li>
+          <li>Instances are stateless, so no credentials or application data are stored on them.</li>
+          <li>HTTPS is listed under future enhancements: it needs an ACM certificate and a custom domain, neither of which is part of this project.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     10. PROJECT DEMONSTRATION
+     ============================================================ -->
+<section class="section" id="demo">
+  <div class="container">
+    <header class="section-head reveal">
+      <span class="eyebrow">Interactive Demonstration</span>
+      <h2>See Scalability in Action</h2>
+      <p>A presentation-ready control panel. <strong>This is a front-end simulation</strong> — it models the behaviour of the deployed stack but does not read live AWS data. The measured results are in <a href="#verification">Auto Scaling Demonstration</a>.</p>
+    </header>
+
+    <div class="glass demo reveal">
+      <div class="demo__head">
+        <span class="badge badge--sim">Demo / Simulated Data</span>
+        <span class="demo__clock" id="demoClock">--:--:--</span>
+      </div>
+
+      <div class="demo__stats">
+        <div class="demo__stat">
+          <span class="demo__stat-label">Current Traffic</span>
+          <span class="demo__stat-value" data-traffic-label>NORMAL</span>
+        </div>
+        <div class="demo__stat">
+          <span class="demo__stat-label">EC2 Instances</span>
+          <span class="demo__stat-value" data-instance-count>2</span>
+        </div>
+        <div class="demo__stat">
+          <span class="demo__stat-label">Load Balancer</span>
+          <span class="demo__stat-value demo__stat-value--ok" data-demo-lb>ACTIVE</span>
+        </div>
+        <div class="demo__stat">
+          <span class="demo__stat-label">Auto Scaling</span>
+          <span class="demo__stat-value demo__stat-value--ok">ENABLED</span>
+        </div>
+      </div>
+
+      <div class="demo__fleet" id="demoFleet" aria-live="polite"></div>
+
+      <div class="demo__controls">
+        <button class="btn btn--primary" id="btnIncrease">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+          Increase Traffic
+        </button>
+        <button class="btn btn--ghost" id="btnDecrease">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="m5 12 7 7 7-7"/></svg>
+          Decrease Traffic
+        </button>
+        <button class="btn btn--danger" id="btnFailure">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20z"/><path d="M12 9v5"/><path d="M12 17h.01"/></svg>
+          <span id="btnDemoFailureLabel">Simulate Failure</span>
+        </button>
+        <button class="btn btn--ghost" id="btnReset">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3.5V9h-5.5"/></svg>
+          Reset Demo
+        </button>
+      </div>
+
+      <p class="demo__message" id="demoMessage" role="status">System nominal — 2 healthy instances serving normal traffic.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     11. ABOUT
+     ============================================================ -->
+<section class="section section--alt" id="about">
+  <div class="container">
+    <header class="section-head reveal">
+      <span class="eyebrow">Project Information</span>
+      <h2>About CloudScale</h2>
+      <p>A college Cloud Computing project built to demonstrate scalable, highly available web hosting on AWS.</p>
+    </header>
+
+    <div class="about-grid">
+      <div class="glass panel reveal">
+        <dl class="spec">
+          <div><dt>Project</dt><dd>Scalable Web Application with ALB &amp; Auto Scaling</dd></div>
+          <div><dt>Cloud Platform</dt><dd>Amazon Web Services</dd></div>
+          <div><dt>Front End</dt><dd>HTML5 · CSS3 · Vanilla JavaScript</dd></div>
+          <div><dt>Region</dt><dd>ap-south-1 (Mumbai) · 2 Availability Zones</dd></div>
+          <div><dt>Web Server</dt><dd>Apache HTTP Server on Ubuntu (t3.micro)</dd></div>
+          <div><dt>Status</dt><dd><span class="badge badge--ok">Deployed and tested on AWS</span></dd></div>
+        </dl>
+      </div>
+
+      <div class="glass panel reveal">
+        <span class="eyebrow">Core Technologies</span>
+        <ul class="tech-list">
+          <li><b>Amazon EC2</b><span>t3.micro · Ubuntu</span></li>
+          <li><b>Application Load Balancer</b><span>CloudScale-ALB</span></li>
+          <li><b>Target Group</b><span>CloudScale-TG</span></li>
+          <li><b>EC2 Auto Scaling</b><span>CloudScale-ASG</span></li>
+          <li><b>Amazon CloudWatch</b><span>CPU metrics</span></li>
+          <li><b>Amazon VPC</b><span>2 Availability Zones</span></li>
+          <li><b>Security Groups</b><span>CloudScale-EC2-SG</span></li>
+        </ul>
+      </div>
+
+      <div class="glass panel panel--purpose reveal">
+        <span class="eyebrow">Purpose</span>
+        <p class="lead-quote">
+          “Demonstrate scalable, highly available cloud web hosting using AWS infrastructure — and prove it with a measured scale-out and scale-in.”
+        </p>
+        <div class="college-note">
+          <span class="college-note__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 2 9l10 5 10-5z"/><path d="M6 11.5V16c0 1.4 2.7 2.6 6 2.6s6-1.2 6-2.6v-4.5"/></svg>
+          </span>
+          <div>
+            <b>College Cloud Computing Project</b>
+            <small>Infrastructure design, deployment on AWS and a verified Auto Scaling demonstration.</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ============================================================
+     FOOTER
+     ============================================================ -->
+<footer class="footer">
+  <div class="container footer__inner">
+    <div class="footer__brand">
+      <span class="brand">
+        <span class="brand__mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 22h14a5 5 0 0 0 .4-10A7.5 7.5 0 0 0 9 12.5 5.5 5.5 0 0 0 8 22z"/><path d="M12 26h10"/></svg>
+        </span>
+        <strong>CloudScale</strong>
+      </span>
+      <p>Scalable. Available. Cloud-Powered.</p>
+    </div>
+
+    <nav class="footer__links" aria-label="Footer">
+      <a href="#home">Home</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#scalability">Scalability</a>
+      <a href="#monitoring">Monitoring</a>
+      <a href="#verification">Verification</a>
+      <a href="#about">About</a>
+    </nav>
+
+    <div class="footer__meta">
+      <span class="badge badge--sim">Interactive panels use simulated data</span>
+      <span class="badge badge--ok">Deployed on AWS · ap-south-1</span>
+      <p>AWS Cloud Computing Project — Project 4</p>
+    </div>
+  </div>
+  <div class="footer__bottom container">
+    <span>&copy; <span id="year">2026</span> CloudScale</span>
+    <a href="#home" class="to-top">Back to top
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+    </a>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
