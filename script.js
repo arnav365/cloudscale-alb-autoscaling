@@ -1005,3 +1005,266 @@
     init();
   }
 })();
+
+/* ==========================================================================
+   LIVE AWS MONITOR
+   Fetches real infrastructure state from the read-only Lambda Function URL
+   and renders it. Nothing in this module invents a value: if AWS cannot be
+   reached, the panel says so and marks the previous numbers stale rather
+   than presenting them as current.
+
+   Configure by pasting the Function URL below. While it is empty the panel
+   stays dormant and makes no network request.
+   ========================================================================== */
+const LIVE_API_URL = 'https://wy653rminjqhscbnxseelzy3ca0pmuyk.lambda-url.ap-south-1.on.aws/';
+
+(function () {
+  'use strict';
+
+  const REFRESH_MS = 30000;         // auto refresh interval
+  const TIMEOUT_MS = 12000;         // abort a hung request
+
+  const $  = (s, r) => (r || document).querySelector(s);
+  const $$ = (s, r) => Array.prototype.slice.call((r || document).querySelectorAll(s));
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const el = {
+    panel:   $('#liveMonitor'),
+    dot:     $('#liveDot'),
+    status:  $('#liveStatus'),
+    stamp:   $('#liveStamp'),
+    refresh: $('#liveRefresh'),
+    notice:  $('#liveNotice'),
+    body:    $('#liveBody'),
+    error:   $('#liveError'),
+    rows:    $('#mRows'),
+    fleet:   $('#mFleet'),
+    events:  $('#mEvents'),
+    line:    $('#mLine'),
+    target:  $('#mTargetLine')
+  };
+  if (!el.panel) return;
+
+  /* Dormant until a Function URL is supplied. */
+  if (!LIVE_API_URL) {
+    setStatus('idle', 'Not configured');
+    return;
+  }
+
+  let inFlight = false;             // prevents overlapping requests
+  let timer = null;
+  let previous = null;              // last successful snapshot, for change detection
+
+  el.notice.hidden = true;
+  el.body.hidden = false;
+  el.refresh.disabled = false;
+  el.refresh.addEventListener('click', function () { load('manual'); });
+
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) stopTimer(); else { load('resume'); startTimer(); }
+  });
+
+  load('initial');
+  startTimer();
+
+  /* ---------------------------------------------------------------- fetch */
+  function startTimer() {
+    stopTimer();
+    timer = window.setInterval(function () { load('auto'); }, REFRESH_MS);
+  }
+  function stopTimer() {
+    if (timer) { window.clearInterval(timer); timer = null; }
+  }
+
+  async function load(reason) {
+    if (inFlight) return;           // a request is already running — never stack them
+    inFlight = true;
+    setStatus('loading', reason === 'initial' ? 'Connecting' : 'Refreshing');
+
+    const controller = new AbortController();
+    const abort = window.setTimeout(function () { controller.abort(); }, TIMEOUT_MS);
+
+    try {
+      const res = await fetch(LIVE_API_URL, {
+        signal: controller.signal,
+        cache: 'no-store',
+        headers: { accept: 'application/json' }
+      });
+      if (!res.ok) throw new Error('Backend returned HTTP ' + res.status);
+
+      const data = await res.json();
+      render(data);
+      detectChanges(data);
+      previous = data;
+
+      const warned = (data.warnings && data.warnings.length) || !data.cpu?.available;
+      setStatus(warned ? 'warn' : 'live', warned ? 'Partial data' : 'Live');
+      showError(warned ? (data.warnings || []).join(' · ') : null, 'warn');
+      el.stamp.textContent = clock(data.fetchedAt);
+    } catch (err) {
+      markStale();
+      setStatus('error', err.name === 'AbortError' ? 'Timeout' : 'Error');
+      showError(
+        err.name === 'AbortError'
+          ? 'Live AWS data temporarily unavailable — the request timed out. Retrying automatically.'
+          : 'Unable to retrieve AWS data (' + (err.message || 'network error') + '). Retrying automatically.',
+        'error'
+      );
+    } finally {
+      window.clearTimeout(abort);
+      inFlight = false;
+    }
+  }
+
+  /* --------------------------------------------------------------- render */
+  function render(d) {
+    $$('.live-card').forEach(function (c) { c.classList.remove('is-stale'); });
+
+    const asg = d.asg && d.asg.available ? d.asg : null;
+    const tg = d.targetGroup && d.targetGroup.available ? d.targetGroup : null;
+    const cpu = d.cpu && d.cpu.available ? d.cpu : null;
+
+    /* CPU — the measured value, never the configured target */
+    text('#mCpu', cpu && cpu.current !== null ? cpu.current.toFixed(1) + '%' : 'No data');
+    text('#mCpuAt', cpu && cpu.observedAt
+      ? 'measured ' + clock(cpu.observedAt)
+      : (cpu ? 'awaiting first datapoint' : 'CloudWatch unavailable'));
+    text('#mCpuNote', cpu && cpu.note ? cpu.note : '');
+
+    const targetCpu = asg && asg.targetCpu !== null && asg.targetCpu !== undefined ? asg.targetCpu : null;
+    text('#mCpuTarget', targetCpu !== null ? targetCpu + '%' : '—');
+    text('#mTargetLabel', targetCpu !== null ? targetCpu + '%' : '—');
+    if (el.target && targetCpu !== null) {
+      const y = 104 - (Math.min(targetCpu, 100) / 100) * 104;
+      el.target.setAttribute('y1', y.toFixed(1));
+      el.target.setAttribute('y2', y.toFixed(1));
+    }
+
+    text('#mHealthy',   asg ? String(asg.healthy) : '—');
+    text('#mInService', asg ? String(asg.inService) : '—');
+    text('#mDesired',   asg ? String(asg.desired) : '—');
+    text('#mMinMax',    asg ? asg.min + ' / ' + asg.max : '—');
+    text('#mAz',        asg ? String((asg.availabilityZones || []).length) : '—');
+    text('#mAzList',    asg ? (asg.availabilityZones || []).join(' · ') : 'unavailable');
+
+    text('#mTg', tg ? tg.healthy + ' / ' + tg.unhealthy : 'unavailable');
+    text('#mTgName', tg ? tg.name + ' · healthy / unhealthy' : (d.targetGroup && d.targetGroup.error) || 'healthy / unhealthy');
+
+    drawChart(cpu);
+    drawFleet(d.instances && d.instances.items ? d.instances.items : []);
+    drawRows(d.instances, asg);
+  }
+
+  function drawChart(cpu) {
+    if (!el.line) return;
+    const pts = cpu && cpu.points ? cpu.points.filter(function (p) { return p.v !== null; }) : [];
+    if (pts.length < 2) { el.line.setAttribute('points', ''); return; }
+    const step = 320 / (pts.length - 1);
+    el.line.setAttribute('points', pts.map(function (p, i) {
+      const y = 104 - (Math.min(Math.max(p.v, 0), 100) / 100) * 104;
+      return (i * step).toFixed(1) + ',' + y.toFixed(1);
+    }).join(' '));
+  }
+
+  function drawFleet(items) {
+    if (!el.fleet) return;
+    el.fleet.innerHTML = '';
+    if (!items.length) {
+      el.fleet.innerHTML = '<span class="live-table"><span class="empty">No instances reported</span></span>';
+      return;
+    }
+    items.forEach(function (i, n) {
+      const bad = i.health && i.health !== 'Healthy';
+      const node = document.createElement('div');
+      node.className = 'live-node' + (bad ? ' is-bad' : '');
+      if (!reduceMotion) node.style.animationDelay = (n * 60) + 'ms';
+      node.innerHTML = '<b>EC2</b><small>' + esc(i.az || '—') + '</small>';
+      el.fleet.appendChild(node);
+    });
+  }
+
+  function drawRows(instances, asg) {
+    if (!el.rows) return;
+    const items = instances && instances.items ? instances.items : [];
+    el.rows.innerHTML = '';
+    if (!items.length) {
+      el.rows.innerHTML = '<tr><td colspan="5" class="empty">' +
+        esc(instances && instances.error ? instances.error : 'No instances reported by AWS') + '</td></tr>';
+      return;
+    }
+    items.forEach(function (i) {
+      const healthy = i.health === 'Healthy';
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + esc(i.id || '—') + '</td>' +
+        '<td>' + esc(i.type || '—') + '</td>' +
+        '<td>' + esc(i.az || '—') + '</td>' +
+        '<td>' + esc(i.state || '—') + '</td>' +
+        '<td class="' + (healthy ? 'ok' : 'bad') + '">' + esc(i.health || '—') +
+          (i.lifecycle && i.lifecycle !== 'InService' ? ' · ' + esc(i.lifecycle) : '') + '</td>';
+      el.rows.appendChild(tr);
+    });
+  }
+
+  /* Only reports transitions this page actually observed between refreshes. */
+  function detectChanges(d) {
+    if (!previous || !el.events) return;
+    const before = previous.asg, after = d.asg;
+    if (!before || !after || !before.available || !after.available) return;
+
+    if (after.desired !== before.desired) {
+      logEvent(after.desired > before.desired ? 'is-out' : 'is-in',
+        'Desired capacity ' + before.desired + ' → ' + after.desired);
+    }
+    if (after.instanceCount !== before.instanceCount) {
+      const out = after.instanceCount > before.instanceCount;
+      logEvent(out ? 'is-out' : 'is-in',
+        (out ? 'Scale-out detected: ' : 'Scale-in detected: ') +
+        before.instanceCount + ' → ' + after.instanceCount + ' instances');
+    }
+  }
+
+  function logEvent(kind, message) {
+    const li = document.createElement('li');
+    li.className = kind;
+    li.innerHTML = '<time>' + clock(new Date().toISOString()) + '</time><span>' + esc(message) + '</span>';
+    el.events.insertBefore(li, el.events.firstChild);
+    while (el.events.children.length > 6) el.events.removeChild(el.events.lastChild);
+  }
+
+  /* ---------------------------------------------------------------- state */
+  function setStatus(state, label) {
+    if (el.dot) el.dot.setAttribute('data-state', state === 'loading' && !previous ? 'loading' : state);
+    if (el.status) {
+      el.status.textContent = label;
+      el.status.setAttribute('data-state', state === 'loading' ? (previous ? 'live' : 'idle') : state);
+    }
+  }
+
+  /** On failure the numbers are dimmed — never passed off as current. */
+  function markStale() {
+    $$('.live-card').forEach(function (c) { c.classList.add('is-stale'); });
+    el.stamp.textContent = previous ? clock(previous.fetchedAt) + ' (stale)' : '—';
+  }
+
+  function showError(message, tone) {
+    if (!el.error) return;
+    if (!message) { el.error.hidden = true; el.error.textContent = ''; return; }
+    el.error.hidden = false;
+    el.error.textContent = (tone === 'warn' ? 'Partial AWS data: ' : '') + message;
+  }
+
+  function text(sel, value) {
+    const node = $(sel);
+    if (node) node.textContent = value;
+  }
+  function clock(iso) {
+    try { return new Date(iso).toLocaleTimeString([], { hour12: false }); }
+    catch (e) { return '—'; }
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+})();

@@ -640,6 +640,83 @@
       <p>A monitoring console view of the fleet. <strong>All values on this dashboard are simulated in the browser</strong> — the real metrics live in Amazon CloudWatch. The capacity settings shown (min 2 · desired 2 · max 4) are the ones actually configured on <code>CloudScale-ASG</code>.</p>
     </header>
 
+    <!-- ========================================================
+         LIVE AWS MONITOR — real data, fetched from a read-only
+         Lambda Function URL. Renders nothing until configured.
+         ======================================================== -->
+    <section class="glass live reveal" id="liveMonitor" aria-labelledby="liveTitle">
+      <header class="live__bar">
+        <div class="live__id">
+          <span class="live__dot" id="liveDot" data-state="idle" aria-hidden="true"></span>
+          <h3 id="liveTitle">CloudScale Live Infrastructure Monitor</h3>
+          <span class="live__status" id="liveStatus" role="status" aria-live="polite">Not configured</span>
+        </div>
+        <div class="live__tools">
+          <span class="live__stamp">Updated <b id="liveStamp">—</b></span>
+          <button class="btn btn--ghost btn--sm" id="liveRefresh" type="button" disabled>
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 12a8.5 8.5 0 1 1-2.5-6"/><path d="M20.5 3.5V9H15"/></svg>
+            Refresh Now
+          </button>
+        </div>
+      </header>
+
+      <p class="live__notice" id="liveNotice">
+        This panel is not configured yet. Deploy the Lambda in <code>backend/</code> and paste its
+        Function URL into <code>LIVE_API_URL</code> at the top of <code>script.js</code>.
+        Until then no AWS request is made and no value below is shown.
+      </p>
+
+      <div class="live__body" id="liveBody" hidden>
+        <div class="live__cards">
+          <article class="live-card"><span class="live-card__k">Current CPU</span><span class="live-card__v" id="mCpu">—</span><span class="live-card__n" id="mCpuAt">from CloudWatch</span></article>
+          <article class="live-card"><span class="live-card__k">CPU target</span><span class="live-card__v" id="mCpuTarget">—</span><span class="live-card__n">target tracking policy</span></article>
+          <article class="live-card"><span class="live-card__k">Healthy instances</span><span class="live-card__v" id="mHealthy">—</span><span class="live-card__n">reported by the ASG</span></article>
+          <article class="live-card"><span class="live-card__k">In service</span><span class="live-card__v" id="mInService">—</span><span class="live-card__n">lifecycle InService</span></article>
+          <article class="live-card"><span class="live-card__k">Desired</span><span class="live-card__v" id="mDesired">—</span><span class="live-card__n">current capacity</span></article>
+          <article class="live-card"><span class="live-card__k">Min / Max</span><span class="live-card__v" id="mMinMax">—</span><span class="live-card__n">capacity bounds</span></article>
+          <article class="live-card"><span class="live-card__k">Availability Zones</span><span class="live-card__v" id="mAz">—</span><span class="live-card__n" id="mAzList">configured on the group</span></article>
+          <article class="live-card"><span class="live-card__k">Target group</span><span class="live-card__v" id="mTg">—</span><span class="live-card__n" id="mTgName">healthy / unhealthy</span></article>
+        </div>
+
+        <div class="live__split">
+          <figure class="live-chart">
+            <figcaption>CPU utilisation · <span id="mCpuWindow">last 3 hours</span></figcaption>
+            <svg id="mChart" viewBox="0 0 320 130" preserveAspectRatio="none" role="img" aria-label="CPU utilisation from CloudWatch">
+              <g class="live-chart__grid">
+                <line x1="0" y1="26" x2="320" y2="26"/><line x1="0" y1="78" x2="320" y2="78"/><line x1="0" y1="104" x2="320" y2="104"/>
+              </g>
+              <line id="mTargetLine" class="live-chart__target" x1="0" y1="52" x2="320" y2="52"/>
+              <polyline id="mLine" class="live-chart__line" points="" />
+            </svg>
+            <span class="live-chart__legend"><i></i>CPU target <b id="mTargetLabel">—</b> · dashed line</span>
+            <p class="live-chart__note" id="mCpuNote"></p>
+          </figure>
+
+          <div class="live-fleet">
+            <span class="live-fleet__k">Current capacity reported by AWS</span>
+            <div class="live-fleet__row" id="mFleet"></div>
+            <ul class="live-events" id="mEvents" aria-live="polite"></ul>
+          </div>
+        </div>
+
+        <div class="live-table-wrap">
+          <table class="live-table">
+            <caption class="sr-only">EC2 instances in CloudScale-ASG</caption>
+            <thead><tr><th>Instance ID</th><th>Type</th><th>AZ</th><th>State</th><th>Health</th></tr></thead>
+            <tbody id="mRows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <p class="live__error" id="liveError" hidden role="alert"></p>
+      <p class="live__foot">
+        Values in this panel come from the AWS APIs for <code>CloudScale-ASG</code>,
+        <code>CloudScale-TG</code> and CloudWatch in <code>ap-south-1</code>, through a read-only
+        Lambda. Nothing here is generated in the browser. The panel below it is the
+        browser simulation and is unrelated.
+      </p>
+    </section>
+
     <div class="console reveal">
       <div class="console__bar">
         <span class="console__dots"><i></i><i></i><i></i></span>
