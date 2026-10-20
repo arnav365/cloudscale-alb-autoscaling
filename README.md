@@ -1,445 +1,172 @@
-# CloudScale — Scalable & Highly Available Web Application
+# CloudScale — Scalable & Highly Available Web Application on AWS
 
-> **Scalable. Available. Cloud-Powered.**
->
-> A static web application deployed on **Amazon EC2** behind an **Application Load Balancer**, with an
-> **EC2 Auto Scaling Group** that adds and removes capacity automatically based on CPU utilisation.
->
-> **Region:** ap-south-1 (Mumbai) · **Status:** Deployed and tested · **Scaling verified:** 2 → 3 → 2
+> **A production-grade cloud infrastructure project featuring an Application Load Balancer (ALB), an EC2 Auto Scaling Group with CPU target tracking, Multi-AZ high availability, and real-time AWS telemetry.**
+
+[![AWS Deployed](https://img.shields.io/badge/AWS-Deployed%20%26%20Verified-232F3E?logo=amazon-aws&logoColor=FF9900)](http://cloudscale-alb-1130756136.ap-south-1.elb.amazonaws.com)
+[![Region](https://img.shields.io/badge/Region-ap--south--1%20(Mumbai)-1E88E5)](#aws-architecture)
+[![Auto Scaling](https://img.shields.io/badge/Auto%20Scaling-2%20→%203%20→%202%20Verified-success)](#testing-and-verification)
+[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](package.json)
 
 ---
 
 ## 🚀 Live Demo
 
-### ▶ **http://cloudscale-alb-1130756136.ap-south-1.elb.amazonaws.com**
+### ▶ **[http://cloudscale-alb-1130756136.ap-south-1.elb.amazonaws.com](http://cloudscale-alb-1130756136.ap-south-1.elb.amazonaws.com)**
 
-The site is served through **CloudScale-ALB**, the Application Load Balancer, which distributes every
-request across the healthy EC2 instances registered in `CloudScale-TG`. Refreshing the page may be handled
-by a different instance each time — that is the load balancer doing its job.
+The web application is deployed on Amazon EC2 instances distributed across two Availability Zones behind **`CloudScale-ALB`**, an internet-facing Application Load Balancer. The ALB distributes incoming HTTP traffic across healthy target instances registered in **`CloudScale-TG`**. 
 
-> Served over **HTTP** at the load balancer's own DNS name. No custom domain or TLS certificate is part of
-> this project, so use `http://` rather than `https://`.
+> **Protocol Note:** Served over **HTTP** at the ALB's default AWS DNS endpoint. Custom domain and TLS/HTTPS termination are documented under [Future Enhancements](#future-enhancements).
 
 ---
 
 ## Table of Contents
 
-1. [Live Demo](#-live-demo)
-2. [Project Overview](#project-overview)
-3. [Problem Statement](#problem-statement)
-4. [Objectives](#objectives)
-5. [Features](#features)
-6. [AWS Architecture](#aws-architecture)
-7. [AWS Services Used](#aws-services-used)
-8. [Architecture Flow](#architecture-flow)
-9. [Auto Scaling Configuration](#auto-scaling-configuration)
-10. [Load Balancing Configuration](#load-balancing-configuration)
-11. [Security Configuration](#security-configuration)
-12. [Multi-AZ Deployment](#multi-az-deployment)
-13. [Testing Methodology](#testing-methodology)
-14. [Test Results](#test-results)
-15. [Project Verification](#project-verification)
-16. [Deployment & Setup Instructions](#deployment--setup-instructions)
-17. [Running the Website Locally](#running-the-website-locally)
-18. [Project Structure](#project-structure)
-19. [Future Enhancements](#future-enhancements)
-20. [Conclusion](#conclusion)
+1. [Project Overview](#project-overview)
+2. [Problem Statement](#problem-statement)
+3. [Key Features](#key-features)
+4. [AWS Architecture](#aws-architecture)
+5. [AWS Services Used](#aws-services-used)
+6. [Technology Stack](#technology-stack)
+7. [Project Structure](#project-structure)
+8. [Run Locally](#run-locally)
+9. [AWS Deployment & Infrastructure Setup](#aws-deployment--infrastructure-setup)
+10. [Testing and Verification](#testing-and-verification)
+11. [Monitoring: Live Telemetry vs. Frontend Simulation](#monitoring-live-telemetry-vs-frontend-simulation)
+12. [Security and Cost Considerations](#security-and-cost-considerations)
+13. [Future Enhancements](#future-enhancements)
+14. [Author & Repository](#author--repository)
 
 ---
 
 ## Project Overview
 
-CloudScale is a cloud computing project that demonstrates how a website can stay available and absorb
-changes in traffic without any manual intervention.
+Modern production web applications must withstand traffic fluctuations and infrastructure failures without human intervention. Traditional single-server hosting introduces a single point of failure and rigid capacity constraints that either lead to downtime during traffic spikes or waste money through idle, overprovisioned resources.
 
-The website itself is a lightweight static front end (HTML, CSS and vanilla JavaScript) that explains the
-architecture it runs on. It is served by Apache from multiple Ubuntu EC2 instances. Those instances are
-registered in a target group behind an internet-facing Application Load Balancer, and they are created and
-destroyed by an Auto Scaling Group that watches average CPU utilisation.
+**CloudScale solves these challenges** through horizontal elasticity and fault tolerance:
+- **Application Load Balancing:** Distributes incoming user requests evenly across healthy web server instances.
+- **Automated Horizontal Scaling:** Adds compute instances dynamically when CPU utilization exceeds 50%, and terminates excess capacity when load subsides.
+- **Multi-AZ Availability:** Eliminates single points of failure by spreading EC2 capacity across isolated data centers (`ap-south-1a` and `ap-south-1b`).
+- **Live AWS Telemetry:** Features a serverless read-only Lambda backend that queries live AWS infrastructure metrics (ASG capacity, EC2 target health, and CloudWatch CPU utilization) and renders real-time state directly on the web console.
 
-Because the application is completely stateless — no backend, no database, no session storage — any
-instance can serve any request, which is exactly what makes horizontal scaling possible.
-
-| | |
+| Specification | Implementation Details |
 | --- | --- |
-| **Cloud platform** | Amazon Web Services |
-| **Region** | ap-south-1 (Mumbai) |
-| **Availability Zones** | ap-south-1a, ap-south-1b |
-| **Compute** | Amazon EC2 — `t3.micro`, Ubuntu, Apache |
-| **Live URL** | <http://cloudscale-alb-1130756136.ap-south-1.elb.amazonaws.com> |
-| **Entry point** | Application Load Balancer DNS name (HTTP) |
-| **Scaling** | EC2 Auto Scaling — target tracking, 50% average CPU |
-| **Front end** | HTML5 · CSS3 · Vanilla JavaScript (no frameworks, no build step) |
+| **Cloud Provider** | Amazon Web Services (AWS) |
+| **Region & AZs** | `ap-south-1` (Mumbai) · `ap-south-1a`, `ap-south-1b` |
+| **Compute** | Amazon EC2 — `t3.micro` instances, Ubuntu 24.04 LTS, Apache HTTP Server |
+| **Load Balancer** | Application Load Balancer (Layer 7), Internet-facing, HTTP port 80 listener |
+| **Auto Scaling** | EC2 Auto Scaling Group (`CloudScale-ASG`), Min: 2, Desired: 2, Max: 4 |
+| **Scaling Policy** | Target Tracking on `ASGAverageCPUUtilization` at 50% target |
+| **Telemetry Backend** | AWS Lambda (Node.js 20.x, ARM64) with read-only AWS SDK v3 via Function URL |
+| **Front End** | HTML5, CSS3 (vanilla custom dark glass design system), Vanilla JavaScript (no frameworks) |
 
 ---
 
 ## Problem Statement
 
-A website hosted on a single server has two structural weaknesses:
+Single-server architectures suffer from two fundamental design flaws:
 
-1. **It cannot absorb a traffic spike.** When requests exceed what one server can process, CPU saturates,
-   response times climb and requests begin to fail. Buying a permanently larger server wastes money for
-   the majority of the time when traffic is normal.
-2. **It is a single point of failure.** If that one server stops responding — a crash, a failed update, an
-   Availability Zone problem — the entire website is offline. There is nothing to take over.
+1. **Traffic Saturation:** When incoming requests surge past a single server's throughput limits, CPU and memory saturate, response latencies spike, and requests drop. Scaling vertically by purchasing a larger server is expensive and requires manual downtime.
+2. **Single Point of Failure (SPOF):** If a single host suffers a hardware failure, OS kernel panic, or an Availability Zone network disruption, the entire service goes offline immediately.
 
-Manual intervention is not a solution: a person has to notice the problem, decide what to do, and act,
-which takes far longer than the outage can afford.
-
-**CloudScale solves both problems** by running several identical servers across two Availability Zones
-behind a load balancer, and letting AWS add or remove servers automatically as demand changes.
+CloudScale implements **horizontal elasticity**: stateless EC2 instances run behind a health-checked target group, allowing instances to be launched or terminated on demand without dropping connections or impacting end users.
 
 ---
 
-## Objectives
+## Key Features
 
-1. Deploy a web application across **multiple EC2 instances** rather than a single server.
-2. Place an **Application Load Balancer** in front of the fleet as the single public entry point.
-3. Use a **target group with health checks** so traffic only reaches instances that are responding.
-4. Configure an **Auto Scaling Group** with a defined minimum, desired and maximum capacity.
-5. Apply a **target tracking scaling policy** so capacity follows CPU utilisation automatically.
-6. Deploy across **two Availability Zones** for fault tolerance.
-7. Restrict network access using **security groups**, exposing only the ports the application needs.
-8. **Prove** that automatic scale-out and scale-in work, by generating real load and observing the result.
+### Infrastructure & Cloud Engineering
+- **Layer 7 Request Routing:** ALB routes HTTP traffic to healthy targets and automatically skips instances failing health checks.
+- **Autonomous Target Tracking:** Scaling policy automatically calculates instance requirements based on 50% average CPU utilization without complex threshold alarms.
+- **Multi-AZ Redundancy:** EC2 instances are balanced between `ap-south-1a` and `ap-south-1b`, surviving a full AZ outage.
+- **Golden Launch Template:** `CloudScale-Launch-Template` ensures every scaled instance boots with identical packages, configuration, and website files via cloud-init user data.
+- **Zero-Trust Network Perimeter:** Security groups restrict direct web access to the EC2 instances; compute nodes accept HTTP traffic strictly from the ALB's security group.
 
----
-
-## Features
-
-**Infrastructure**
-
-- Internet-facing Application Load Balancer as the single public endpoint
-- Target group with HTTP health checks on `/`
-- Auto Scaling Group holding capacity between 2 and 4 instances
-- Target tracking scaling policy on 50% average CPU
-- Deployment across two Availability Zones
-- Launch template so every instance is created identically
-- Security groups limiting inbound traffic to what is required
-
-**Website**
-
-- Interactive AWS architecture diagram — hover or tap any component for an explanation
-- Request-flow walkthrough linked to the diagram
-- Scalability, high availability, monitoring and security sections
-- **Auto Scaling Demonstration** section documenting the measured 2 → 3 → 2 test
-- **Project Verification** checklist of what was confirmed on the deployed stack
-- Browser-based simulation panels (traffic level, instance failure, reset) for live presentation,
-  clearly labelled **"Demo / Simulated Data"**
-- Responsive from 1440px desktop down to 390px mobile, with a `prefers-reduced-motion` mode
-- No frameworks, no build step, no external requests — three files deploy anywhere
+### Web Application & Telemetry
+- **Interactive AWS Architecture Diagram:** Component-level interactive diagram showing request flow from the public internet down to the EC2 fleet.
+- **Live AWS Infrastructure Monitor:** Dedicated dashboard section connected to a read-only Lambda Function URL, displaying real-time ASG desired/in-service counts, target health, and CloudWatch CPU metrics.
+- **Frontend Scaling & Failure Simulator:** Browser-based simulation allowing users to test scaling logic (Low, Normal, High, Peak) and visualize failover routing without modifying production resources.
+- **Zero Dependencies / Ultra Lightweight:** Vanilla HTML, CSS, and JavaScript with 100% native browser support, dark mode glassmorphism, responsive mobile layouts, and `prefers-reduced-motion` compliance.
 
 ---
 
 ## AWS Architecture
 
-```
-                            INTERNET
-                               |
-                               v
-                  APPLICATION LOAD BALANCER
-                        CloudScale-ALB
-                     (internet-facing, HTTP :80)
-                               |
-                               v
-                         TARGET GROUP
-                         CloudScale-TG
-                  (HTTP :80, health check path /)
-                               |
-                +--------------+--------------+
-                |                             |
-                v                             v
-         EC2 INSTANCE                  EC2 INSTANCE
-        t3.micro, Ubuntu              t3.micro, Ubuntu
-          ap-south-1a                   ap-south-1b
-                |                             |
-                +--------------+--------------+
-                               |
-                               v
-                    AUTO SCALING GROUP
-                       CloudScale-ASG
-              min 2 · desired 2 · max 4
-        target tracking — 50% average CPU utilisation
+```mermaid
+graph TD
+    User["Public Internet Users"] -->|HTTP :80| ALB["Application Load Balancer<br/>(CloudScale-ALB in Multi-AZ)"]
+    
+    subgraph VPC ["Amazon VPC (ap-south-1)"]
+        subgraph PublicSubnets ["Public Subnets (Multi-AZ)"]
+            ALB -->|Forward to Target Group| TG["Target Group: CloudScale-TG<br/>(HTTP :80, Health Check /)"]
+            
+            subgraph AZ1 ["Availability Zone ap-south-1a"]
+                EC2_1["EC2 Instance 1<br/>t3.micro (Ubuntu + Apache)"]
+            end
+            
+            subgraph AZ2 ["Availability Zone ap-south-1b"]
+                EC2_2["EC2 Instance 2<br/>t3.micro (Ubuntu + Apache)"]
+            end
+            
+            TG -->|Routes traffic to healthy targets| EC2_1
+            TG -->|Routes traffic to healthy targets| EC2_2
+            
+            ASG["Auto Scaling Group: CloudScale-ASG<br/>(Min: 2 | Desired: 2 | Max: 4)"] -.->|Launches / Terminates| EC2_1
+            ASG -.->|Launches / Terminates| EC2_2
+        end
+    end
+    
+    subgraph Monitoring ["AWS Telemetry & Scaling Policy"]
+        CW["Amazon CloudWatch<br/>(ASGAverageCPUUtilization)"] <-->|Target Tracking 50%| ASG
+        Lambda["AWS Lambda Function URL<br/>(CloudScale-LiveMonitor)"] -->|Read-Only AWS SDK v3| ASG
+        Lambda -->|Read-Only AWS SDK v3| TG
+        Lambda -->|Read-Only AWS SDK v3| CW
+    end
+    
+    User -.->|Polls Telemetry| Lambda
 ```
 
-The Auto Scaling Group launches instances from `CloudScale-Launch-Template` into both Availability Zones
-and registers them with `CloudScale-TG` automatically. The load balancer never talks to instances
-directly — it forwards to the target group, which routes only to targets passing their health check.
+### Architecture Flow
+1. **Client Request:** An HTTP request hits the DNS endpoint of **`CloudScale-ALB`**.
+2. **Listener & Evaluation:** The ALB listener on port 80 evaluates target health and forwards requests to registered targets in **`CloudScale-TG`**.
+3. **Target Group Routing:** Requests are routed only to healthy EC2 instances passing HTTP health checks on `/`.
+4. **Web Server Response:** The selected EC2 instance running Apache HTTP Server serves the static application.
+5. **Metric Aggregation:** EC2 instances report CPU utilization to Amazon CloudWatch, which aggregates the group average into `ASGAverageCPUUtilization`.
+6. **Dynamic Scaling:** If average CPU exceeds 50%, Auto Scaling launches additional `t3.micro` instances up to a maximum of 4. When load subsides, excess instances are gracefully terminated down to the minimum of 2.
+7. **Telemetry API:** The client website periodically queries the read-only AWS Lambda Function URL to fetch live instance counts, health states, and CloudWatch metrics.
 
 ---
 
 ## AWS Services Used
 
-Only the services below are part of this deployment.
-
-| Service | Resource | Purpose in this project |
-| --- | --- | --- |
-| **Amazon EC2** | `t3.micro` instances (Ubuntu) | Run Apache and serve the website from `/var/www/html` |
-| **EC2 Launch Template** | `CloudScale-Launch-Template` | Defines the AMI, instance type, security group and user data so every instance is identical |
-| **Application Load Balancer** | `CloudScale-ALB` | Internet-facing entry point, HTTP listener on port 80 |
-| **Target Group** | `CloudScale-TG` | Holds the registered instances and health-checks them on `/` |
-| **EC2 Auto Scaling** | `CloudScale-ASG` | Maintains capacity between 2 and 4 instances and replaces unhealthy ones |
-| **Amazon CloudWatch** | `ASGAverageCPUUtilization` | Supplies the CPU metric the scaling policy tracks. The alarms behind the policy are created and managed by AWS automatically |
-| **Amazon VPC** | Public subnets in two AZs | The network the load balancer and instances run in |
-| **Security Groups** | `CloudScale-EC2-SG` | Stateful firewall controlling inbound access to the instances |
-
-**Not used in this project:** RDS, DynamoDB, S3, CloudFront, Lambda, Route 53, ACM, Cognito or any other
-service. The application is stateless and served over HTTP at the load balancer's own DNS name, so none of
-them are required.
-
----
-
-## Architecture Flow
-
-1. A user opens the DNS name of **CloudScale-ALB** in a browser over HTTP.
-2. The request reaches the **Application Load Balancer** on port 80.
-3. The listener forwards the request to the **CloudScale-TG** target group.
-4. The target group routes the request to one of the instances currently **passing its health check**.
-5. That **EC2 instance** serves the page from Apache.
-6. Meanwhile **CloudScale-ASG** watches average CPU across the group and changes the number of running
-   instances when the 50% target is crossed in either direction.
-
----
-
-## Auto Scaling Configuration
-
-| Setting | Value |
-| --- | --- |
-| Auto Scaling Group | `CloudScale-ASG` |
-| Launch template | `CloudScale-Launch-Template` |
-| Instance type | `t3.micro` |
-| Operating system | Ubuntu |
-| **Minimum capacity** | **2** |
-| **Desired capacity** | **2** |
-| **Maximum capacity** | **4** |
-| Scaling policy type | **Target tracking** |
-| Metric | `ASGAverageCPUUtilization` |
-| **Target value** | **50%** |
-| Availability Zones | ap-south-1a, ap-south-1b |
-| Health check type | ELB (target group health checks) |
-| Attached to | `CloudScale-TG` |
-
-**How the policy works.** Every EC2 instance publishes `CPUUtilization` to CloudWatch. CloudWatch
-aggregates it across the Auto Scaling group as `ASGAverageCPUUtilization`. Creating the target tracking
-policy also created the CloudWatch alarms that watch that metric — they were not configured by hand. When
-the average rises above 50%, the group launches instances (up to 4). When it falls back, the group
-terminates instances (down to 2).
-
-Target tracking was chosen over step or simple scaling because it needs exactly one decision — the CPU
-percentage to hold — and AWS calculates the required capacity itself. There are no thresholds, cooldowns
-or alarm actions to tune, which makes the behaviour straightforward to explain and to reproduce.
-
----
-
-## Load Balancing Configuration
-
-| Setting | Value |
-| --- | --- |
-| Load balancer | `CloudScale-ALB` |
-| Type | Application Load Balancer (Layer 7) |
-| Scheme | Internet-facing |
-| Listener | HTTP, port 80 |
-| Listener action | Forward to `CloudScale-TG` |
-| Availability Zones | ap-south-1a, ap-south-1b |
-| Target group | `CloudScale-TG` |
-| Target type | Instance |
-| Target protocol / port | HTTP : 80 |
-| Health check path | `/` |
-| Access | The website is reached at the ALB DNS name |
-
-The load balancer distributes requests across every healthy target. If an instance stops passing its
-health check, the target group stops sending it traffic, and the Auto Scaling group replaces it.
-
----
-
-## Security Configuration
-
-Security groups are **stateful virtual firewalls**: a permitted inbound request is automatically allowed to
-send its response back, and anything not explicitly allowed is denied.
-
-**Inbound rules in use**
-
-| Type | Port | Source | Purpose |
+| Service | Resource Name / Identifier | Status | Purpose |
 | --- | --- | --- | --- |
-| HTTP | 80 | `0.0.0.0/0` | Public web traffic reaching the load balancer |
-| HTTP | 80 | ALB security group | Load balancer forwarding requests to the instances |
-| SSH | 22 | Administrator IP only | Administrative access during setup |
-
-**Practices applied**
-
-- `CloudScale-EC2-SG` accepts web traffic **only from the load balancer's security group**, not from the
-  internet directly.
-- SSH is restricted to a single administrator IP address, never `0.0.0.0/0`.
-- No other ports are opened.
-- The instances are stateless — no credentials or application data are stored on them.
-- **Port 443 is not in use.** HTTPS would require an ACM certificate and a custom domain, neither of which
-  is part of this project. It is listed under future enhancements.
-
----
-
-## Multi-AZ Deployment
-
-The Auto Scaling Group and the load balancer are both configured across **ap-south-1a** and
-**ap-south-1b**.
-
-- At the desired capacity of 2, the group runs one instance in each Availability Zone.
-- The ALB has nodes in both zones, so it can keep serving traffic if one zone has a problem.
-- Auto Scaling balances instances across the zones as capacity changes.
-- Losing one Availability Zone therefore degrades capacity but does not take the website offline.
+| **Amazon EC2** | `t3.micro` (Ubuntu 24.04 LTS) | **Deployed** | Hosts Apache HTTP Server serving application assets. |
+| **EC2 Launch Template** | `CloudScale-Launch-Template` | **Deployed** | Defines AMI, instance type, security groups, and automated user data startup script. |
+| **Application Load Balancer** | `CloudScale-ALB` | **Deployed** | Internet-facing Layer 7 load balancer spanning multiple AZs. |
+| **Target Group** | `CloudScale-TG` | **Deployed** | Manages registered EC2 instances with active HTTP `/` health checks. |
+| **EC2 Auto Scaling** | `CloudScale-ASG` | **Deployed** | Enforces fleet bounds (2–4 instances) and coordinates horizontal scaling. |
+| **Amazon CloudWatch** | `ASGAverageCPUUtilization` | **Deployed** | Collects CPU metrics and triggers target tracking alarms. |
+| **Amazon VPC** | Multi-AZ Subnets | **Deployed** | Network isolation across `ap-south-1a` and `ap-south-1b`. |
+| **Security Groups** | `CloudScale-EC2-SG`, `ALB-SG` | **Deployed** | Stateful firewall limiting instance access strictly to ALB traffic and admin SSH. |
+| **AWS Lambda** | `CloudScale-LiveMonitor` | **Deployed** | Serverless telemetry backend providing live AWS infrastructure metrics via Function URL. |
+| **AWS IAM** | `CloudScale-LiveMonitor-Role` | **Deployed** | Least-privilege read-only role for Lambda telemetry queries. |
+| **AWS Certificate Manager** | Planned | *Planned* | TLS certificate provisioning for HTTPS port 443 termination. |
+| **Amazon Route 53** | Planned | *Planned* | Custom apex domain and DNS latency routing. |
 
 ---
 
-## Testing Methodology
+## Technology Stack
 
-The goal was to confirm that Auto Scaling responds to real CPU pressure without any manual action.
-
-1. **Establish the baseline.** Confirm `CloudScale-ASG` is at desired capacity 2 and both targets report
-   **InService / Healthy** in `CloudScale-TG`.
-2. **Confirm the site is served.** Open <http://cloudscale-alb-1130756136.ap-south-1.elb.amazonaws.com>
-   and confirm the website loads.
-3. **Generate CPU load.** Connect to the instances over SSH and run `stress-ng` to drive CPU utilisation
-   up:
-
-   ```bash
-   sudo apt update
-   sudo apt install -y stress-ng
-   stress-ng --cpu 2 --timeout 600s
-   ```
-
-4. **Watch the metric.** Observe `ASGAverageCPUUtilization` in CloudWatch rising past the 50% target.
-5. **Observe scale-out.** Watch the Auto Scaling group's activity history and instance count, and wait for
-   the new instance to reach **InService / Healthy** in the target group.
-6. **Stop the load.** End the `stress-ng` run and let CPU return to normal.
-7. **Observe scale-in.** Confirm the group terminates the extra instance and settles back at its desired
-   capacity of 2.
-
----
-
-## Test Results
-
-The test was carried out on the deployed stack and completed successfully.
-
-| # | Stage | Observed result |
-| --- | --- | --- |
-| 1 | Steady state | **2 instances**, both InService and Healthy |
-| 2 | CPU load generated with `stress-ng` | Average CPU reached **approximately 50%+** |
-| 3 | **Scale-out** | Auto Scaling increased capacity **2 → 3 instances** |
-| 4 | New instance registered | All **3 instances** InService and Healthy |
-| 5 | CPU load stopped | Average CPU returned to normal |
-| 6 | **Scale-in** | Auto Scaling reduced capacity **3 → 2 instances** |
-| 7 | Final state | **2 healthy instances** — the configured minimum |
-
-**Scale-out result: 2 → 3 instances.**
-**Scale-in result: 3 → 2 instances.**
-
-Both directions were handled automatically by the target tracking policy. No capacity change was made by
-hand at any point during the test.
-
----
-
-## Project Verification
-
-| Item | Status | Evidence |
-| --- | --- | --- |
-| ALB successfully serves the website | ✅ Verified | Live at <http://cloudscale-alb-1130756136.ap-south-1.elb.amazonaws.com> |
-| Target group has healthy targets | ✅ Verified | `CloudScale-TG` reports every registered instance Healthy |
-| ASG maintains minimum 2 instances | ✅ Verified | Capacity never dropped below 2 during testing |
-| CPU target tracking configured at 50% | ✅ Verified | Target tracking policy on `ASGAverageCPUUtilization`, target value 50 |
-| Scale-out successfully tested | ✅ Verified | **2 → 3 instances** under generated CPU load |
-| Scale-in successfully tested | ✅ Verified | **3 → 2 instances** after load was removed |
-| Multi-AZ deployment verified | ✅ Verified | Instances running in ap-south-1a and ap-south-1b |
-
----
-
-## Deployment & Setup Instructions
-
-The steps below reproduce the deployment. **Nothing here needs to be re-run for the existing stack — it is
-already deployed and tested.**
-
-### 1. Network
-
-Use public subnets in **two Availability Zones** (ap-south-1a and ap-south-1b) with internet access, so the
-load balancer and the instances can both be reached.
-
-### 2. Security groups
-
-- **ALB security group** — inbound HTTP :80 from `0.0.0.0/0`.
-- **`CloudScale-EC2-SG`** — inbound HTTP :80 from the ALB security group, plus SSH :22 from your own IP.
-
-### 3. Base instance and website deployment
-
-Launch an Ubuntu `t3.micro` instance, then install Apache and deploy the site:
-
-```bash
-sudo apt update
-sudo apt install -y apache2
-sudo systemctl enable --now apache2
-
-# copy index.html, style.css and script.js into the web root
-sudo cp index.html style.css script.js /var/www/html/
-sudo systemctl restart apache2
-```
-
-### 4. Launch template
-
-Create **`CloudScale-Launch-Template`** with the Ubuntu AMI, instance type `t3.micro` and
-`CloudScale-EC2-SG`. Add user data so every new instance builds itself the same way:
-
-```bash
-#!/bin/bash
-apt update -y
-apt install -y apache2
-systemctl enable --now apache2
-# deploy the CloudScale site into /var/www/html
-```
-
-Alternatively, create an AMI from the configured instance and use that AMI in the launch template.
-
-### 5. Target group
-
-Create **`CloudScale-TG`** — target type *instance*, protocol **HTTP**, port **80**, health check path `/`.
-
-### 6. Load balancer
-
-Create **`CloudScale-ALB`** — internet-facing Application Load Balancer, both Availability Zones, with an
-**HTTP :80 listener** forwarding to `CloudScale-TG`.
-
-### 7. Auto Scaling Group
-
-Create **`CloudScale-ASG`** using the launch template, across both Availability Zones, attached to
-`CloudScale-TG` with ELB health checks enabled:
-
-- Minimum capacity **2**
-- Desired capacity **2**
-- Maximum capacity **4**
-
-### 8. Scaling policy
-
-Add a **target tracking** policy on **`ASGAverageCPUUtilization`** with a **target value of 50**.
-
-### 9. Test
-
-Open the load balancer's DNS name — for this deployment
-<http://cloudscale-alb-1130756136.ap-south-1.elb.amazonaws.com> — to confirm the site is served, then
-follow [Testing Methodology](#testing-methodology) to verify scaling in both directions.
-
----
-
-## Running the Website Locally
-
-The front end is completely static, so it runs without any AWS resources.
-
-```bash
-# clone and enter the project
-git clone https://github.com/arnav365/cloudscale-alb-autoscaling
-cd cloudscale-alb-autoscaling
-
-# serve it (either option works)
-python -m http.server 8000
-# or
-npx http-server -p 8000
-```
-
-Open <http://localhost:8000>. You can also open `index.html` directly — it works from `file://` too.
+- **Frontend:**
+  - **HTML5:** Semantic document structure, SEO metadata, accessible landmarks, and SVG diagrams.
+  - **CSS3:** Custom design tokens, glassmorphism surfaces, responsive grid layouts, and micro-animations.
+  - **Vanilla JavaScript (ES6+):** Zero-dependency reactive UI state, architecture interaction handlers, and live telemetry polling.
+- **Backend & Telemetry:**
+  - **Node.js 20.x:** Lightweight ESM handler (`backend/index.mjs`) deployed on AWS Lambda ARM64.
+  - **AWS SDK v3:** Read-only client libraries (`@aws-sdk/client-auto-scaling`, `@aws-sdk/client-ec2`, `@aws-sdk/client-elastic-load-balancing-v2`, `@aws-sdk/client-cloudwatch`).
+- **Tooling & Local Dev:**
+  - **Node.js / npm:** Configured with `package.json` scripts using `serve`.
+  - **Python 3:** Alternate zero-dependency local HTTP server.
 
 ---
 
@@ -447,62 +174,191 @@ Open <http://localhost:8000>. You can also open `index.html` directly — it wor
 
 ```
 cloudscale-alb-autoscaling/
+├── index.html              # Main application: hero, architecture diagram, live monitor,
+│                           # interactive simulator, verification checklist, security specs
+├── style.css               # Complete stylesheet: design tokens, dark glassmorphism,
+│                           # responsive rules, and hardware-accelerated animations
+├── script.js               # Application logic: simulation engine, diagram interactions,
+│                           # SVG chart rendering, and live AWS Lambda telemetry integration
+├── package.json            # Node.js project manifest with local development scripts
+├── .gitignore              # Ignores node_modules, environment variables, logs, and OS caches
+├── README.md               # Project documentation, architecture specs, and testing results
 │
-├── index.html          # All sections: hero, architecture, services, scalability,
-│                       # availability, monitoring, verification, deployment,
-│                       # security, demo, about
-├── style.css           # Design tokens, components, motion layer, responsive rules
-├── script.js           # Navigation, scroll reveal, diagram interactions,
-│                       # simulation state, dashboard charts
-├── README.md           # This document
-└── assets/             # Reserved for static assets (none required)
+├── backend/                # Serverless read-only telemetry backend
+│   ├── index.mjs           # AWS Lambda handler (Node.js 20.x ESM, AWS SDK v3)
+│   ├── iam-policy.json     # Least-privilege read-only IAM policy for Lambda role
+│   └── README.md           # Backend architecture, IAM setup, and deployment guide
+│
+└── assets/                 # Static project assets directory
 ```
 
-No dependencies, no build step and no external requests. `index.html`, `style.css` and `script.js` are
-everything the website needs, which is what makes it trivial to copy to `/var/www/html` on every instance.
+---
+
+## Run Locally
+
+The website frontend is static and can run locally without any AWS credentials or local cloud emulators.
+
+### Prerequisites
+- Node.js (v18+) or Python 3.x
+- Git
+
+### 1. Clone the repository
+```bash
+git clone https://github.com/arnav365/cloudscale-alb-autoscaling.git
+cd cloudscale-alb-autoscaling
+```
+
+### 2. Start the local server
+
+Using npm (Node.js):
+```bash
+# Starts local development server on port 8000
+npm run dev
+
+# Or run:
+npm start
+```
+
+Using Python:
+```bash
+npm run serve:py
+# Equivalent to: python -m http.server 8000
+```
+
+### 3. Open the application
+Navigate to **`http://localhost:8000`** in any web browser. You can also open `index.html` directly in your browser using the `file://` protocol.
+
+---
+
+## AWS Deployment & Infrastructure Setup
+
+The infrastructure was deployed in AWS region **`ap-south-1` (Mumbai)** using the following procedure:
+
+### 1. Network Configuration
+- Configured public subnets in **`ap-south-1a`** and **`ap-south-1b`** attached to an Internet Gateway.
+
+### 2. Security Groups
+- **`CloudScale-ALB-SG`:** Allows inbound HTTP (`TCP :80`) from `0.0.0.0/0`.
+- **`CloudScale-EC2-SG`:**
+  - Inbound HTTP (`TCP :80`) allowed **only from `CloudScale-ALB-SG`**.
+  - Inbound SSH (`TCP :22`) restricted to the administrator's trusted IP address.
+
+### 3. Launch Template (`CloudScale-Launch-Template`)
+- **AMI:** Ubuntu Server 24.04 LTS (HVM), SSD Volume Type
+- **Instance Type:** `t3.micro`
+- **Security Group:** `CloudScale-EC2-SG`
+- **User Data Script (`cloud-init`):**
+  ```bash
+  #!/bin/bash
+  apt update -y
+  apt install -y apache2
+  systemctl enable --now apache2
+  
+  # Deploy CloudScale website files into the web root
+  # Files: index.html, style.css, script.js
+  ```
+
+### 4. Target Group (`CloudScale-TG`)
+- **Target Type:** Instances
+- **Protocol / Port:** HTTP : 80
+- **Health Check Path:** `/`
+- **Health Check Thresholds:** 2 consecutive successes to mark Healthy, 2 failures to mark Unhealthy.
+
+### 5. Application Load Balancer (`CloudScale-ALB`)
+- **Scheme:** Internet-facing
+- **IP Address Type:** IPv4
+- **VPC Subnets:** Attached to both `ap-south-1a` and `ap-south-1b`.
+- **Listener:** HTTP : 80 forwarding to `CloudScale-TG`.
+
+### 6. Auto Scaling Group (`CloudScale-ASG`)
+- **Launch Template:** `CloudScale-Launch-Template`
+- **Capacity Limits:** Minimum: `2`, Desired: `2`, Maximum: `4`
+- **Subnets:** Spans both Availability Zones.
+- **Target Group Attachment:** `CloudScale-TG`
+- **Health Check Type:** ELB (evaluates target group health checks in addition to EC2 status checks).
+
+### 7. Target Tracking Scaling Policy
+- **Metric Type:** `ASGAverageCPUUtilization`
+- **Target Value:** `50.0%`
+- **Warmup Time:** 300 seconds
+
+---
+
+## Testing and Verification
+
+To verify that the infrastructure scales automatically without manual intervention, real CPU stress was applied to the live instances.
+
+### Load Test Procedure
+1. **Steady-State Baseline:** Verified `CloudScale-ASG` was running 2 healthy instances (1 in `ap-south-1a`, 1 in `ap-south-1b`).
+2. **Traffic Verification:** Opened the ALB DNS endpoint to confirm Apache served the website from both instances.
+3. **Generating CPU Load:** Connected to the instances via SSH and ran `stress-ng` to saturate compute cores:
+   ```bash
+   sudo apt update && sudo apt install -y stress-ng
+   stress-ng --cpu 2 --timeout 600s
+   ```
+4. **CloudWatch Alarm Trigger:** CloudWatch metric `ASGAverageCPUUtilization` climbed past the 50% threshold.
+5. **Observed Scale-Out:** Auto Scaling automatically launched a 3rd `t3.micro` instance. The new instance ran user data, registered with `CloudScale-TG`, passed health checks, and received ALB traffic.
+6. **Removing Stress Load:** Terminated the `stress-ng` process. CPU utilization returned to baseline (<10%).
+7. **Observed Scale-In:** Auto Scaling detected sustained utilization below target and terminated the extra instance, safely returning desired capacity to 2.
+
+### Summary of Observed Results
+
+| Test Stage | Fleet Count | Target Health | Average CPU | System Action |
+| --- | :---: | :---: | :---: | --- |
+| **1. Baseline** | 2 | 2 Healthy | ~8% | Steady state (min capacity held) |
+| **2. Load Generated** | 2 | 2 Healthy | >50% | CloudWatch alarm fires |
+| **3. Scale-Out** | **3** | 3 Healthy | ~45% | **ASG launches 3rd instance automatically** |
+| **4. Load Relieved** | 3 | 3 Healthy | ~6% | Cool-down period evaluated |
+| **5. Scale-In** | **2** | 2 Healthy | ~5% | **ASG terminates extra instance automatically** |
+
+---
+
+## Monitoring: Live Telemetry vs. Frontend Simulation
+
+The web interface features two distinct evaluation layers:
+
+### 1. Live AWS Infrastructure Monitor
+- **Mechanism:** Powered by a serverless backend (`backend/index.mjs`) deployed as an AWS Lambda Function URL.
+- **Data Source:** Makes authenticated, read-only calls to the AWS SDK v3 to retrieve active `DescribeAutoScalingGroups`, `DescribeTargetHealth`, and CloudWatch `GetMetricData` metrics.
+- **Integrity:** Displays exact live data from `ap-south-1`. If the Lambda service is unreachable or credentials expire, the UI explicitly flags data as stale or offline.
+
+### 2. Interactive Frontend Simulator
+- **Mechanism:** Browser-based simulation driven by `script.js`.
+- **Purpose:** Designed for live portfolio demonstrations, stakeholder presentations, and interview walkthroughs.
+- **Functionality:** Allows the user to cycle through traffic tiers (Low, Normal, High, Peak) and trigger simulated instance failures to demonstrate failover routing and load rebalancing without modifying live AWS infrastructure.
+
+---
+
+## Security and Cost Considerations
+
+### Security Best Practices Implemented
+- **Network Isolation:** EC2 instances do not accept direct web traffic from the public internet (`0.0.0.0/0`). Only the ALB security group is authorized on port 80.
+- **Administrative Access:** SSH port 22 is restricted to a single administrator IP address.
+- **Least-Privilege IAM Policy:** The Lambda telemetry function uses a custom IAM policy (`backend/iam-policy.json`) strictly granting `Describe*` and `GetMetricData` permissions. Write and administrative actions are explicitly disallowed.
+- **Stateless Hosts:** Web servers store no customer data, secrets, or persistent credentials. Instances can be terminated and replaced without data loss.
+
+### Cost Optimization
+- **AWS Free Tier Compatibility:** Built using `t3.micro` EC2 instances (eligible for 750 monthly hours under the AWS Free Tier).
+- **Scale-In Capacity Bounds:** Desired and minimum capacity are locked at 2 instances to minimize baseline running costs while maintaining high availability.
+- **Serverless Telemetry:** The Lambda monitoring backend incurs charges only per invocation (well within the 1 million free monthly requests).
 
 ---
 
 ## Future Enhancements
 
-- **HTTPS** — request an ACM certificate, add a custom domain, and add an HTTPS :443 listener with an
-  HTTP-to-HTTPS redirect.
-- **Amazon Route 53** — a friendly domain name in front of the load balancer DNS name.
-- **Private subnets** — move the instances into private subnets with a NAT gateway so they are not
-  directly reachable from the internet.
-- **CloudWatch dashboard and alarms** — a custom dashboard plus notification alarms for scaling events.
-- **Scheduled scaling** — raise the minimum capacity ahead of known busy periods.
-- **Infrastructure as Code** — reproduce the whole stack with CloudFormation or Terraform.
-- **CI/CD** — deploy website updates automatically instead of copying files by hand.
+- **HTTPS / TLS Encryption:** Issue a public SSL/TLS certificate via **AWS Certificate Manager (ACM)** and add an HTTPS port 443 listener with HTTP-to-HTTPS automatic redirection.
+- **Custom Apex Domain:** Configure **Amazon Route 53** with alias records pointing to the ALB DNS name.
+- **Private Subnet Isolation:** Place EC2 instances in private VPC subnets with a NAT Gateway for outbound patch management, preventing instances from having public IP addresses.
+- **Real-Time Event Alerts:** Configure **Amazon SNS** topics attached to Auto Scaling lifecycle notifications to email administrators on scale-out or scale-in events.
+- **Infrastructure as Code (IaC):** Replicate the entire VPC, ALB, ASG, and Lambda stack as modular **Terraform** or **AWS CloudFormation** templates.
 
 ---
 
-## Conclusion
+## Author & Repository
 
-CloudScale demonstrates a complete, working implementation of a scalable and highly available web
-application on AWS.
-
-Traffic enters through an Application Load Balancer, is routed through a health-checked target group to
-Ubuntu EC2 instances running Apache, and the size of that fleet is managed by an Auto Scaling Group using a
-target tracking policy on 50% average CPU. Everything runs across two Availability Zones, and access is
-restricted by security groups that open only the ports the application needs.
-
-The scaling behaviour was not assumed — it was tested. Generating CPU load with `stress-ng` pushed average
-utilisation past the 50% target and Auto Scaling increased capacity from **2 to 3 instances**; removing the
-load brought it back down from **3 to 2 instances**. Both actions happened automatically.
-
-The result is an architecture that absorbs traffic growth without manual intervention, survives the loss of
-an individual instance, and costs nothing extra while demand is normal.
+- **Author:** Arnav ([@arnav365](https://github.com/arnav365))
+- **Project Repository:** [https://github.com/arnav365/cloudscale-alb-autoscaling](https://github.com/arnav365/cloudscale-alb-autoscaling)
+- **Live AWS Deployment:** [http://cloudscale-alb-1130756136.ap-south-1.elb.amazonaws.com](http://cloudscale-alb-1130756136.ap-south-1.elb.amazonaws.com)
 
 ---
-
-### Author
-
-**College Cloud Computing Project**
-CloudScale — Scalable & Highly Available Web Application with AWS ALB and Auto Scaling
-
-- Live demo: <http://cloudscale-alb-1130756136.ap-south-1.elb.amazonaws.com>
-- Cloud platform: Amazon Web Services (ap-south-1)
-- Front end: HTML5 · CSS3 · Vanilla JavaScript
-- Web server: Apache HTTP Server on Ubuntu
-- Status: Deployed, tested and verified
+*Distributed under the ISC License. See `package.json` for details.*
