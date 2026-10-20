@@ -1,24 +1,26 @@
 # CloudScale Live Monitor — backend
 
-A single read-only AWS Lambda that reports the **current** state of the existing CloudScale
-infrastructure. The website fetches it and renders the Live Infrastructure Monitor panel.
+A single read-only AWS Lambda that reports the **current** state of the CloudScale
+infrastructure. The website fetches it and renders the **Live AWS Telemetry** panel.
 
 ```
 Browser (CloudScale site)
-        │  HTTPS GET
+        │  HTTPS GET (every 60 s)
         ▼
 Lambda Function URL
         │
 CloudScale-LiveMonitor  (Node.js 20.x, no dependencies to install)
         │  AWS SDK v3, read-only
         ├── autoscaling:DescribeAutoScalingGroups / DescribePolicies
+        ├── autoscaling:DescribeScalingActivities
         ├── ec2:DescribeInstances / DescribeInstanceStatus
         ├── elasticloadbalancing:DescribeTargetGroups / DescribeTargetHealth
-        └── cloudwatch:GetMetricData
+        ├── elasticloadbalancing:DescribeLoadBalancers
+        ├── cloudwatch:GetMetricData  (EC2 CPU + 4 ALB metrics)
+        └── cloudwatch:DescribeAlarms
 ```
 
-**Nothing in the existing stack is modified.** No ALB, target group, ASG, launch template, EC2
-instance, VPC or security group is touched. This adds one Lambda and one IAM role, both new.
+**Nothing in the existing stack is modified.** This adds one Lambda and one IAM role.
 
 ---
 
@@ -26,149 +28,116 @@ instance, VPC or security group is touched. This adds one Lambda and one IAM rol
 
 | File | Purpose |
 | --- | --- |
-| `index.mjs` | The Lambda handler. Paste straight into the console editor — no `npm install`, no zip |
+| `index.mjs` | The Lambda handler. Paste into the console editor — no npm install, no zip |
 | `iam-policy.json` | The read-only policy to attach to the execution role |
 
 ---
 
 ## Step 1 — Create the IAM policy
 
-1. Open the **IAM** console → **Policies** → **Create policy**.
-2. Choose the **JSON** tab and replace the contents with `backend/iam-policy.json`.
+1. Open **IAM** console → **Policies** → **Create policy**.
+2. Choose **JSON** tab, replace contents with `backend/iam-policy.json`.
 3. **Next** → Policy name: `CloudScale-LiveMonitor-ReadOnly` → **Create policy**.
-
-Seven actions, all read-only. `Describe*` calls do not support resource-level permissions in IAM,
-so `"Resource": "*"` is required — the policy still grants no write access of any kind.
 
 ## Step 2 — Create the execution role
 
 1. IAM → **Roles** → **Create role**.
-2. Trusted entity type: **AWS service** → Use case: **Lambda** → **Next**.
-3. Search for and tick **`CloudScale-LiveMonitor-ReadOnly`**.
-4. Also tick **`AWSLambdaBasicExecutionRole`** (CloudWatch Logs for the function itself).
-5. **Next** → Role name: `CloudScale-LiveMonitor-Role` → **Create role**.
+2. Trusted entity: **AWS service** → Use case: **Lambda** → **Next**.
+3. Tick **`CloudScale-LiveMonitor-ReadOnly`** and **`AWSLambdaBasicExecutionRole`**.
+4. Role name: `CloudScale-LiveMonitor-Role` → **Create role**.
 
 ## Step 3 — Create the Lambda function
 
-1. Switch the console region to **Asia Pacific (Mumbai) ap-south-1** — top-right region picker.
-   Getting this wrong is the most common cause of "group not found".
+1. Switch the console region to **ap-south-1 (Mumbai)**.
 2. **Lambda** → **Create function** → **Author from scratch**.
 3. Function name: `CloudScale-LiveMonitor`
-4. Runtime: **Node.js 20.x** · Architecture: **arm64** (cheaper) or x86_64.
-5. Expand **Change default execution role** → **Use an existing role** → `CloudScale-LiveMonitor-Role`.
+4. Runtime: **Node.js 20.x** · Architecture: **arm64** (cheaper).
+5. Expand **Change default execution role** → **Use existing** → `CloudScale-LiveMonitor-Role`.
 6. **Create function**.
 
 ## Step 4 — Add the code
 
-1. On the function page, open the **Code** tab.
-2. Rename `index.mjs` if the editor created `index.js`: right-click the file → **Rename** → `index.mjs`.
-   (The handler uses ESM `import` syntax, which requires the `.mjs` extension.)
-3. Delete the placeholder contents and paste all of `backend/index.mjs`.
-4. Click **Deploy**.
-
-> The AWS SDK v3 is pre-installed in the Node.js 20.x runtime, so there is nothing to install.
-> If you ever see `Cannot find package '@aws-sdk/client-auto-scaling'`, the runtime stopped
-> bundling it — in that case run `npm i @aws-sdk/client-auto-scaling @aws-sdk/client-ec2
-> @aws-sdk/client-elastic-load-balancing-v2 @aws-sdk/client-cloudwatch` locally and upload a zip.
+1. **Code** tab → rename `index.js` to `index.mjs` if needed.
+2. Delete placeholder content and paste `backend/index.mjs`.
+3. Click **Deploy**.
 
 ## Step 5 — Raise the timeout
 
-1. **Configuration** tab → **General configuration** → **Edit**.
-2. Timeout: **10 seconds** (the default 3 s is too short for four AWS APIs).
-3. Memory: **256 MB** is ample. → **Save**.
+1. **Configuration** → **General configuration** → **Edit**.
+2. Timeout: **15 seconds**, Memory: **256 MB** → **Save**.
 
-Optional — **Configuration → Environment variables** if your names ever differ:
+## Step 6 — Set environment variables (optional)
 
-| Key | Default |
-| --- | --- |
-| `ASG_NAME` | `CloudScale-ASG` |
-| `TG_NAME` | `CloudScale-TG` |
-| `CPU_PERIOD_SECONDS` | `300` |
-| `CPU_WINDOW_MINUTES` | `180` |
-| `CACHE_TTL_MS` | `15000` |
+| Key | Default | Description |
+| --- | --- | --- |
+| `ASG_NAME` | `CloudScale-ASG` | Auto Scaling Group name |
+| `TG_NAME` | `CloudScale-TG` | Target Group name |
+| `ALB_NAME` | `CloudScale-ALB` | ALB plain name (not ARN) |
+| `CPU_PERIOD_SECONDS` | `300` | EC2 CPU sampling period |
+| `CPU_WINDOW_MINUTES` | `180` | EC2 CPU history window |
+| `ALB_PERIOD_SECONDS` | `60` | ALB sampling period |
+| `ALB_WINDOW_MINUTES` | `60` | ALB history window |
+| `SCALING_ACTIVITY_MAX` | `10` | Recent scaling activities count |
+| `CACHE_TTL_MS` | `15000` | Server-side cache TTL |
 
-## Step 6 — Test inside the console
+See `.env.example` in the project root for details.
 
-1. **Test** tab → Create a new event, any name, leave the JSON as `{}` → **Test**.
-2. A healthy response looks like:
+## Step 7 — Test inside the console
 
-```json
-{
-  "statusCode": 200,
-  "body": "{\"ok\":true,\"region\":\"ap-south-1\",\"asg\":{\"available\":true,\"desired\":2, ... }}"
-}
-```
+1. **Test** tab → event `{}` → **Test**.
+2. Check that `asg`, `targetGroup`, `cpu`, `alb`, `alarms`, and `scalingActivities`
+   all appear with `"available": true`.
 
-If a section reports `"available": false` with an access-denied message, the policy from Step 1
-is not attached to the role from Step 2.
+## Step 8 — Create the Function URL
 
-## Step 7 — Create the Function URL
-
-1. **Configuration** tab → **Function URL** → **Create function URL**.
+1. **Configuration** → **Function URL** → **Create function URL**.
 2. Auth type: **NONE**.
-3. Tick **Configure cross-origin resource sharing (CORS)** and set:
-   - **Allow origin**: `http://cloudscale-alb-1130756136.ap-south-1.elb.amazonaws.com`
-     (use `*` while testing locally, then tighten it)
-   - **Allow methods**: `GET`
-   - **Allow headers**: `content-type`
-4. **Save**. Copy the URL — it looks like `https://<id>.lambda-url.ap-south-1.on.aws/`.
+3. Enable CORS: Allow origin `*` (tighten to the ALB DNS after testing).
+4. Copy the URL.
 
-> **Auth type NONE means anyone with that URL can read this JSON** — instance IDs, counts and CPU.
-> Nothing can be changed through it, but treat the URL as semi-public. Tighten the CORS origin,
-> and delete the Function URL after your demo if you prefer.
+## Step 9 — Point the website at it
 
-## Step 8 — Point the website at it
-
-In `script.js`, near the bottom:
-
-```js
-const LIVE_API_URL = '';   // ← paste the Function URL between the quotes
-```
-
-Becomes:
+In `script.js`, set:
 
 ```js
 const LIVE_API_URL = 'https://<id>.lambda-url.ap-south-1.on.aws/';
 ```
 
-Then redeploy the site files to the instances as usual:
+Redeploy to instances:
 
 ```bash
 sudo cp index.html style.css script.js /var/www/html/
 sudo systemctl restart apache2
 ```
 
-While `LIVE_API_URL` is empty the panel stays dormant and makes **no** network request, so the
-site is safe to publish before the Lambda exists.
+---
+
+## Dashboard data sources
+
+| Panel | Value | AWS API |
+| --- | --- | --- |
+| EC2 / ASG | CPU + history chart | `cloudwatch:GetMetricData` AWS/EC2 |
+| EC2 / ASG | CPU target | `autoscaling:DescribePolicies` |
+| EC2 / ASG | Healthy / Desired / Min / Max | `autoscaling:DescribeAutoScalingGroups` |
+| EC2 / ASG | Instance fleet | `ec2:DescribeInstances` + `DescribeInstanceStatus` |
+| Target Group | Healthy / Unhealthy targets | `elasticloadbalancing:DescribeTargetHealth` |
+| ALB | Request count (Sum) | `cloudwatch:GetMetricData` AWS/ApplicationELB |
+| ALB | Target response time (Avg) | `cloudwatch:GetMetricData` AWS/ApplicationELB |
+| ALB | HTTP 4xx errors (Sum) | `cloudwatch:GetMetricData` AWS/ApplicationELB |
+| ALB | HTTP 5xx errors (Sum) | `cloudwatch:GetMetricData` AWS/ApplicationELB |
+| Alarms | OK / ALARM / NO DATA counts | `cloudwatch:DescribeAlarms` |
+| Activities | Recent scale-out / scale-in | `autoscaling:DescribeScalingActivities` |
 
 ---
 
-## What the dashboard shows and where it comes from
+## Free Tier cost estimate
 
-| Value | AWS source |
-| --- | --- |
-| Current CPU + history graph | `cloudwatch:GetMetricData`, `AWS/EC2 CPUUtilization`, dimension `AutoScalingGroupName` |
-| CPU target | `autoscaling:DescribePolicies` → target tracking `TargetValue` |
-| Healthy / in-service / desired / min / max | `autoscaling:DescribeAutoScalingGroups` |
-| Instance ID, type, AZ, state | `ec2:DescribeInstances` (+ `DescribeInstanceStatus` for checks) |
-| Target group healthy / unhealthy | `elasticloadbalancing:DescribeTargetHealth` |
+| Service | Usage | Estimated cost |
+| --- | --- | --- |
+| Lambda invocations | ~1,440/day | **$0** (1M free/month) |
+| Lambda compute | ~3s × 256 MB/call | **$0** (400,000 GB-s free/month) |
+| CloudWatch GetMetricData | 5 queries/call | **$0** (1M API calls free/month) |
+| CloudWatch DescribeAlarms | 1 call/min | **< $0.01/month** |
+| EC2 / ELB Describe* | 4 calls/min | **$0** |
 
-**CPU resolution.** EC2 basic monitoring publishes `CPUUtilization` every **5 minutes**, so the
-graph has 5-minute granularity and the newest point can be a few minutes old — the panel prints the
-datapoint's own timestamp next to it for exactly this reason. One-minute resolution needs EC2
-**detailed monitoring**, which is a paid feature and is deliberately not enabled here.
-
-Capacity, instance state and target health come from Describe APIs and are current at fetch time.
-
-## Cost
-
-Expected to sit inside the AWS Free Tier for a project of this size: the Lambda is invoked roughly
-twice a minute per open browser tab, and the function caches its result for 15 seconds so extra
-viewers do not multiply the AWS calls. `cloudwatch:GetMetricData` is billed per metrics requested
-beyond the free allowance. Check current Lambda and CloudWatch pricing before leaving the dashboard
-open for long periods, and close the tab when you are not demonstrating.
-
-## Removing it
-
-Delete the Function URL, the Lambda, then the role and policy. The CloudScale stack is unaffected —
-the monitor only ever reads.
+**Total: < $0.01/month** at the default 60-second frontend poll interval.

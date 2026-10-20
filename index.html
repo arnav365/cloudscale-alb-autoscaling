@@ -648,10 +648,13 @@
       <header class="live__bar">
         <div class="live__id">
           <span class="live__dot" id="liveDot" data-state="idle" aria-hidden="true"></span>
-          <h3 id="liveTitle">CloudScale Live Infrastructure Monitor</h3>
+          <h3 id="liveTitle">Live AWS Telemetry
+            <span class="live__mode-badge" id="liveModeBadge" data-mode="live">LIVE</span>
+          </h3>
           <span class="live__status" id="liveStatus" role="status" aria-live="polite">Not configured</span>
         </div>
         <div class="live__tools">
+          <span class="live__poll-label">Auto-refresh: <b id="livePollInterval">60s</b></span>
           <span class="live__stamp">Updated <b id="liveStamp">—</b></span>
           <button class="btn btn--ghost btn--sm" id="liveRefresh" type="button" disabled>
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 12a8.5 8.5 0 1 1-2.5-6"/><path d="M20.5 3.5V9H15"/></svg>
@@ -667,6 +670,12 @@
       </p>
 
       <div class="live__body" id="liveBody" hidden>
+
+        <!-- ── Row 1: EC2 / ASG cards ───────────────────────────────────── -->
+        <p class="live__row-label">
+          <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+          EC2 &amp; Auto Scaling Group
+        </p>
         <div class="live__cards">
           <article class="live-card"><span class="live-card__k">Current CPU</span><span class="live-card__v" id="mCpu">—</span><span class="live-card__n" id="mCpuAt">from CloudWatch</span></article>
           <article class="live-card"><span class="live-card__k">CPU target</span><span class="live-card__v" id="mCpuTarget">—</span><span class="live-card__n">target tracking policy</span></article>
@@ -678,6 +687,50 @@
           <article class="live-card"><span class="live-card__k">Target group</span><span class="live-card__v" id="mTg">—</span><span class="live-card__n" id="mTgName">healthy / unhealthy</span></article>
         </div>
 
+        <!-- ── Row 2: ALB CloudWatch metrics ────────────────────────────── -->
+        <p class="live__row-label">
+          <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M2 8a6 6 0 1 1 12 0A6 6 0 0 1 2 8zm6-7a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM7 5v4l3 2 .7-1.2L8 8.4V5H7z"/></svg>
+          Application Load Balancer — CloudWatch Metrics
+          <span class="live__sub-note" id="mAlbNote"></span>
+        </p>
+        <div class="live__cards live__cards--alb">
+          <article class="live-card">
+            <span class="live-card__k">Request count</span>
+            <span class="live-card__v" id="mAlbRequests">—</span>
+            <span class="live-card__n" id="mAlbRequestsAt">last datapoint · Sum/min</span>
+          </article>
+          <article class="live-card">
+            <span class="live-card__k">Target response time</span>
+            <span class="live-card__v" id="mAlbLatency">—</span>
+            <span class="live-card__n" id="mAlbLatencyAt">Avg · seconds</span>
+          </article>
+          <article class="live-card live-card--warn" id="mAlb4xxCard">
+            <span class="live-card__k">HTTP 4xx errors</span>
+            <span class="live-card__v" id="mAlb4xx">—</span>
+            <span class="live-card__n" id="mAlb4xxAt">last datapoint · Sum/min</span>
+          </article>
+          <article class="live-card live-card--error" id="mAlb5xxCard">
+            <span class="live-card__k">HTTP 5xx errors</span>
+            <span class="live-card__v" id="mAlb5xx">—</span>
+            <span class="live-card__n" id="mAlb5xxAt">last datapoint · Sum/min</span>
+          </article>
+        </div>
+
+        <!-- ── Row 3: CloudWatch Alarm states ───────────────────────────── -->
+        <p class="live__row-label">
+          <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM7 4h2v5H7V4zm0 6h2v2H7v-2z"/></svg>
+          CloudWatch Alarms
+        </p>
+        <div class="live__alarm-summary" id="mAlarmSummary">
+          <span class="alarm-badge alarm-badge--ok" id="mAlarmOk" title="Alarms in OK state">— OK</span>
+          <span class="alarm-badge alarm-badge--alarm" id="mAlarmIn" title="Alarms firing">— ALARM</span>
+          <span class="alarm-badge alarm-badge--nd" id="mAlarmNd" title="Insufficient data">— NO DATA</span>
+        </div>
+        <div class="live__alarm-list-wrap" id="mAlarmListWrap" hidden>
+          <ul class="live__alarm-list" id="mAlarmList" aria-live="polite"></ul>
+        </div>
+
+        <!-- ── Row 4: CPU chart + fleet ─────────────────────────────────── -->
         <div class="live__split">
           <figure class="live-chart">
             <figcaption>CPU utilisation · <span id="mCpuWindow">last 3 hours</span></figcaption>
@@ -699,6 +752,7 @@
           </div>
         </div>
 
+        <!-- ── Row 5: EC2 instance table ────────────────────────────────── -->
         <div class="live-table-wrap">
           <table class="live-table">
             <caption class="sr-only">EC2 instances in CloudScale-ASG</caption>
@@ -706,14 +760,26 @@
             <tbody id="mRows"></tbody>
           </table>
         </div>
-      </div>
+
+        <!-- ── Row 6: Auto Scaling activity feed ────────────────────────── -->
+        <div class="live__scaling-wrap">
+          <p class="live__row-label">
+            <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            Recent Auto Scaling Activities
+          </p>
+          <ul class="live__scaling-list" id="mScalingList" aria-live="polite">
+            <li class="scaling-item scaling-item--empty">No activities loaded yet</li>
+          </ul>
+        </div>
+
+      </div><!-- /live__body -->
 
       <p class="live__error" id="liveError" hidden role="alert"></p>
       <p class="live__foot">
         Values in this panel come from the AWS APIs for <code>CloudScale-ASG</code>,
-        <code>CloudScale-TG</code> and CloudWatch in <code>ap-south-1</code>, through a read-only
-        Lambda. Nothing here is generated in the browser. The panel below it is the
-        browser simulation and is unrelated.
+        <code>CloudScale-TG</code>, <code>CloudScale-ALB</code>, and CloudWatch in
+        <code>ap-south-1</code>, through a read-only Lambda. Nothing here is generated in the
+        browser. The panel below is the Demo / Simulation mode and is completely unrelated.
       </p>
     </section>
 

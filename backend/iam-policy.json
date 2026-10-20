@@ -6,7 +6,8 @@
       "Effect": "Allow",
       "Action": [
         "autoscaling:DescribeAutoScalingGroups",
-        "autoscaling:DescribePolicies"
+        "autoscaling:DescribePolicies",
+        "autoscaling:DescribeScalingActivities"
       ],
       "Resource": "*"
     },
@@ -20,19 +21,21 @@
       "Resource": "*"
     },
     {
-      "Sid": "ReadTargetGroupHealth",
+      "Sid": "ReadTargetGroupAndAlbHealth",
       "Effect": "Allow",
       "Action": [
         "elasticloadbalancing:DescribeTargetGroups",
-        "elasticloadbalancing:DescribeTargetHealth"
+        "elasticloadbalancing:DescribeTargetHealth",
+        "elasticloadbalancing:DescribeLoadBalancers"
       ],
       "Resource": "*"
     },
     {
-      "Sid": "ReadCloudWatchMetrics",
+      "Sid": "ReadCloudWatchMetricsAndAlarms",
       "Effect": "Allow",
       "Action": [
-        "cloudwatch:GetMetricData"
+        "cloudwatch:GetMetricData",
+        "cloudwatch:DescribeAlarms"
       ],
       "Resource": "*"
     }

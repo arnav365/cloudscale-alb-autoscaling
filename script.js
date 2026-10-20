@@ -1021,29 +1021,45 @@ const LIVE_API_URL = 'https://wy653rminjqhscbnxseelzy3ca0pmuyk.lambda-url.ap-sou
 (function () {
   'use strict';
 
-  const REFRESH_MS = 30000;         // auto refresh interval
-  const TIMEOUT_MS = 12000;         // abort a hung request
+  const REFRESH_MS    = 60000;       // auto-refresh every 60 seconds
+  const TIMEOUT_MS    = 15000;       // abort a hung request after 15 s
+  const POLL_DISPLAY  = '60s';
 
   const $  = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.prototype.slice.call((r || document).querySelectorAll(s));
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reduceMotion  = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const el = {
-    panel:   $('#liveMonitor'),
-    dot:     $('#liveDot'),
-    status:  $('#liveStatus'),
-    stamp:   $('#liveStamp'),
-    refresh: $('#liveRefresh'),
-    notice:  $('#liveNotice'),
-    body:    $('#liveBody'),
-    error:   $('#liveError'),
-    rows:    $('#mRows'),
-    fleet:   $('#mFleet'),
-    events:  $('#mEvents'),
-    line:    $('#mLine'),
-    target:  $('#mTargetLine')
+    panel:         $('#liveMonitor'),
+    dot:           $('#liveDot'),
+    modeBadge:     $('#liveModeBadge'),
+    status:        $('#liveStatus'),
+    stamp:         $('#liveStamp'),
+    pollInterval:  $('#livePollInterval'),
+    refresh:       $('#liveRefresh'),
+    notice:        $('#liveNotice'),
+    body:          $('#liveBody'),
+    error:         $('#liveError'),
+    rows:          $('#mRows'),
+    fleet:         $('#mFleet'),
+    events:        $('#mEvents'),
+    line:          $('#mLine'),
+    target:        $('#mTargetLine'),
+    // Alarm elements
+    alarmOk:       $('#mAlarmOk'),
+    alarmIn:       $('#mAlarmIn'),
+    alarmNd:       $('#mAlarmNd'),
+    alarmListWrap: $('#mAlarmListWrap'),
+    alarmList:     $('#mAlarmList'),
+    // ALB elements
+    albNote:       $('#mAlbNote'),
+    // Scaling activities
+    scalingList:   $('#mScalingList')
   };
   if (!el.panel) return;
+
+  /* Display poll interval label */
+  if (el.pollInterval) el.pollInterval.textContent = POLL_DISPLAY;
 
   /* Dormant until a Function URL is supplied. */
   if (!LIVE_API_URL) {
@@ -1051,12 +1067,12 @@ const LIVE_API_URL = 'https://wy653rminjqhscbnxseelzy3ca0pmuyk.lambda-url.ap-sou
     return;
   }
 
-  let inFlight = false;             // prevents overlapping requests
-  let timer = null;
-  let previous = null;              // last successful snapshot, for change detection
+  let inFlight  = false;           // prevents overlapping requests
+  let timer     = null;
+  let previous  = null;            // last successful snapshot for change detection
 
   el.notice.hidden = true;
-  el.body.hidden = false;
+  el.body.hidden   = false;
   el.refresh.disabled = false;
   el.refresh.addEventListener('click', function () { load('manual'); });
 
@@ -1077,7 +1093,7 @@ const LIVE_API_URL = 'https://wy653rminjqhscbnxseelzy3ca0pmuyk.lambda-url.ap-sou
   }
 
   async function load(reason) {
-    if (inFlight) return;           // a request is already running — never stack them
+    if (inFlight) return;
     inFlight = true;
     setStatus('loading', reason === 'initial' ? 'Connecting' : 'Refreshing');
 
@@ -1121,10 +1137,11 @@ const LIVE_API_URL = 'https://wy653rminjqhscbnxseelzy3ca0pmuyk.lambda-url.ap-sou
     $$('.live-card').forEach(function (c) { c.classList.remove('is-stale'); });
 
     const asg = d.asg && d.asg.available ? d.asg : null;
-    const tg = d.targetGroup && d.targetGroup.available ? d.targetGroup : null;
+    const tg  = d.targetGroup && d.targetGroup.available ? d.targetGroup : null;
     const cpu = d.cpu && d.cpu.available ? d.cpu : null;
+    const alb = d.alb && d.alb.available ? d.alb : null;
 
-    /* CPU — the measured value, never the configured target */
+    /* ── EC2 / ASG cards ──────────────────────────────────────────────── */
     text('#mCpu', cpu && cpu.current !== null ? cpu.current.toFixed(1) + '%' : 'No data');
     text('#mCpuAt', cpu && cpu.observedAt
       ? 'measured ' + clock(cpu.observedAt)
@@ -1147,12 +1164,127 @@ const LIVE_API_URL = 'https://wy653rminjqhscbnxseelzy3ca0pmuyk.lambda-url.ap-sou
     text('#mAz',        asg ? String((asg.availabilityZones || []).length) : '—');
     text('#mAzList',    asg ? (asg.availabilityZones || []).join(' · ') : 'unavailable');
 
-    text('#mTg', tg ? tg.healthy + ' / ' + tg.unhealthy : 'unavailable');
+    text('#mTg',     tg ? tg.healthy + ' / ' + tg.unhealthy : 'unavailable');
     text('#mTgName', tg ? tg.name + ' · healthy / unhealthy' : (d.targetGroup && d.targetGroup.error) || 'healthy / unhealthy');
 
+    /* ── CPU chart ───────────────────────────────────────────────────── */
     drawChart(cpu);
     drawFleet(d.instances && d.instances.items ? d.instances.items : []);
     drawRows(d.instances, asg);
+
+    /* ── ALB CloudWatch metrics ──────────────────────────────────────── */
+    renderAlb(alb, d.alb);
+
+    /* ── CloudWatch Alarms ───────────────────────────────────────────── */
+    renderAlarms(d.alarms);
+
+    /* ── Scaling Activities ──────────────────────────────────────────── */
+    renderScalingActivities(d.scalingActivities);
+  }
+
+  /* ALB metrics */
+  function renderAlb(alb, raw) {
+    if (!alb) {
+      const msg = raw && raw.error ? raw.error : 'ALB metrics not available';
+      text('#mAlbRequests', 'N/A');
+      text('#mAlbLatency',  'N/A');
+      text('#mAlb4xx',      'N/A');
+      text('#mAlb5xx',      'N/A');
+      if (el.albNote) el.albNote.textContent = msg;
+      return;
+    }
+
+    if (el.albNote) el.albNote.textContent = 'last ' + alb.windowMinutes + ' min · ' + alb.periodSeconds + 's period';
+
+    const req = alb.requestCount;
+    text('#mAlbRequests', req.value !== null ? req.value.toLocaleString() : 'No data');
+    text('#mAlbRequestsAt', req.observedAt ? 'at ' + clock(req.observedAt) + ' · Sum/' + alb.periodSeconds + 's' : 'awaiting datapoint');
+
+    const lat = alb.responseTime;
+    text('#mAlbLatency', lat.value !== null ? lat.value.toFixed(3) + 's' : 'No data');
+    text('#mAlbLatencyAt', lat.observedAt ? 'at ' + clock(lat.observedAt) + ' · Avg' : 'awaiting datapoint');
+
+    const e4 = alb.http4xx;
+    const v4 = e4.value !== null ? e4.value : null;
+    text('#mAlb4xx', v4 !== null ? v4.toLocaleString() : 'No data');
+    text('#mAlb4xxAt', e4.observedAt ? 'at ' + clock(e4.observedAt) : 'awaiting datapoint');
+    const card4 = $('#mAlb4xxCard');
+    if (card4) card4.classList.toggle('live-card--warn', v4 !== null && v4 > 0);
+
+    const e5 = alb.http5xx;
+    const v5 = e5.value !== null ? e5.value : null;
+    text('#mAlb5xx', v5 !== null ? v5.toLocaleString() : 'No data');
+    text('#mAlb5xxAt', e5.observedAt ? 'at ' + clock(e5.observedAt) : 'awaiting datapoint');
+    const card5 = $('#mAlb5xxCard');
+    if (card5) {
+      card5.classList.toggle('live-card--error', v5 !== null && v5 > 0);
+      card5.classList.remove('live-card--warn');
+    }
+  }
+
+  /* Alarm summary + list */
+  function renderAlarms(alarmsData) {
+    if (!alarmsData || !alarmsData.available) {
+      if (el.alarmOk) el.alarmOk.textContent = '— OK';
+      if (el.alarmIn) el.alarmIn.textContent = '— ALARM';
+      if (el.alarmNd) el.alarmNd.textContent = '— NO DATA';
+      if (el.alarmListWrap) el.alarmListWrap.hidden = true;
+      return;
+    }
+
+    if (el.alarmOk) el.alarmOk.textContent = alarmsData.ok + ' OK';
+    if (el.alarmIn) el.alarmIn.textContent = alarmsData.inAlarm + ' ALARM';
+    if (el.alarmNd) el.alarmNd.textContent = alarmsData.noData + ' NO DATA';
+
+    const alarms = alarmsData.alarms || [];
+    if (!alarms.length || !el.alarmList) {
+      if (el.alarmListWrap) el.alarmListWrap.hidden = true;
+      return;
+    }
+
+    el.alarmListWrap.hidden = false;
+    el.alarmList.innerHTML = '';
+    alarms.forEach(function (a) {
+      const stateClass = a.state === 'OK' ? '--ok' : a.state === 'ALARM' ? '--alarm' : '--nd';
+      const li = document.createElement('li');
+      li.innerHTML =
+        '<span class="alarm-row__state alarm-row__state' + stateClass + '"></span>' +
+        '<span class="alarm-row__name">' + esc(a.name) + (a.metric ? ' <small>(' + esc(a.metric) + ')</small>' : '') + '</span>' +
+        '<span class="alarm-row__meta">' + esc(a.state) + (a.updatedAt ? ' · ' + clock(a.updatedAt) : '') + '</span>';
+      el.alarmList.appendChild(li);
+    });
+  }
+
+  /* Scaling activities list */
+  function renderScalingActivities(scalingData) {
+    if (!el.scalingList) return;
+    if (!scalingData || !scalingData.available) {
+      el.scalingList.innerHTML = '<li class="scaling-item scaling-item--empty">Scaling activities unavailable</li>';
+      return;
+    }
+    const activities = (scalingData.activities || []);
+    if (!activities.length) {
+      el.scalingList.innerHTML = '<li class="scaling-item scaling-item--empty">No recent scaling activities</li>';
+      return;
+    }
+    el.scalingList.innerHTML = '';
+    activities.forEach(function (a) {
+      const sc = a.status || 'Unknown';
+      const li = document.createElement('li');
+      li.className = 'scaling-item';
+      const progressBar = a.status === 'InProgress' && a.progress !== null
+        ? '<span class="scaling-item__progress"><span class="scaling-item__progress-fill" style="width:' + a.progress + '%"></span></span>'
+        : '';
+      li.innerHTML =
+        '<span class="scaling-item__status scaling-item__status--' + esc(sc) + '" title="' + esc(sc) + '"></span>' +
+        '<span class="scaling-item__body">' +
+          '<span class="scaling-item__desc">' + esc(a.description || '—') + '</span>' +
+          (a.cause ? '<span class="scaling-item__cause">' + esc(a.cause) + '</span>' : '') +
+          progressBar +
+        '</span>' +
+        '<span class="scaling-item__time">' + (a.startTime ? clock(a.startTime) : '—') + '</span>';
+      el.scalingList.appendChild(li);
+    });
   }
 
   function drawChart(cpu) {
@@ -1239,6 +1371,10 @@ const LIVE_API_URL = 'https://wy653rminjqhscbnxseelzy3ca0pmuyk.lambda-url.ap-sou
       el.status.textContent = label;
       el.status.setAttribute('data-state', state === 'loading' ? (previous ? 'live' : 'idle') : state);
     }
+    if (el.modeBadge) {
+      el.modeBadge.setAttribute('data-mode', state === 'live' || state === 'warn' ? 'live' : 'demo');
+      el.modeBadge.textContent = state === 'live' ? 'LIVE' : state === 'warn' ? 'PARTIAL' : state === 'loading' ? '…' : 'LIVE';
+    }
   }
 
   /** On failure the numbers are dimmed — never passed off as current. */
@@ -1268,3 +1404,4 @@ const LIVE_API_URL = 'https://wy653rminjqhscbnxseelzy3ca0pmuyk.lambda-url.ap-sou
     });
   }
 })();
+
