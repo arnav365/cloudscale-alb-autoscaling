@@ -2,7 +2,7 @@
 
 > **A production-grade cloud infrastructure project featuring an Application Load Balancer (ALB), an EC2 Auto Scaling Group with CPU target tracking, Multi-AZ high availability, and real-time AWS telemetry.**
 
-[![AWS Deployed](https://img.shields.io/badge/AWS-Deployed%20%26%20Verified-232F3E?logo=amazon-aws&logoColor=FF9900)](http://cloudscale-alb-1130756136.ap-south-1.elb.amazonaws.com)
+[![AWS Deployed](https://img.shields.io/badge/AWS-Deployed%20%26%20Verified-232F3E?logo=amazon-aws&logoColor=FF9900)](http://CloudScale-ALB-68735344.ap-south-1.elb.amazonaws.com)
 [![Region](https://img.shields.io/badge/Region-ap--south--1%20(Mumbai)-1E88E5)](#aws-architecture)
 [![Auto Scaling](https://img.shields.io/badge/Auto%20Scaling-2%20→%203%20→%202%20Verified-success)](#testing-and-verification)
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](package.json)
@@ -11,11 +11,13 @@
 
 ## 🚀 Live Demo
 
-### ▶ **[http://cloudscale-alb-1130756136.ap-south-1.elb.amazonaws.com](http://cloudscale-alb-1130756136.ap-south-1.elb.amazonaws.com)**
+- **Live Website:** [http://CloudScale-ALB-68735344.ap-south-1.elb.amazonaws.com](http://CloudScale-ALB-68735344.ap-south-1.elb.amazonaws.com)
+- **GitHub Repository:** [https://github.com/arnav365/cloudscale-alb-autoscaling](https://github.com/arnav365/cloudscale-alb-autoscaling)
+- **AWS Region:** Asia Pacific (Mumbai), `ap-south-1`
 
 The web application is deployed on Amazon EC2 instances distributed across two Availability Zones behind **`CloudScale-ALB`**, an internet-facing Application Load Balancer. The ALB distributes incoming HTTP traffic across healthy target instances registered in **`CloudScale-TG`**. 
 
-> **Protocol Note:** Served over **HTTP** at the ALB's default AWS DNS endpoint. Custom domain and TLS/HTTPS termination are documented under [Future Enhancements](#future-enhancements).
+> **Protocol Note:** Served over **HTTP** through the Application Load Balancer's public AWS DNS endpoint. HTTPS / TLS encryption is not configured yet (documented under [Future Enhancements](#future-enhancements)).
 
 ---
 
@@ -358,7 +360,7 @@ The web interface features two distinct evaluation layers:
 
 - **Author:** Arnav ([@arnav365](https://github.com/arnav365))
 - **Project Repository:** [https://github.com/arnav365/cloudscale-alb-autoscaling](https://github.com/arnav365/cloudscale-alb-autoscaling)
-- **Live AWS Deployment:** [http://cloudscale-alb-1130756136.ap-south-1.elb.amazonaws.com](http://cloudscale-alb-1130756136.ap-south-1.elb.amazonaws.com)
+- **Live AWS Deployment:** [http://CloudScale-ALB-68735344.ap-south-1.elb.amazonaws.com](http://CloudScale-ALB-68735344.ap-south-1.elb.amazonaws.com)
 
 ---
 *Distributed under the ISC License. See `package.json` for details.*
