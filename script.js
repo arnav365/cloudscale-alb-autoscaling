@@ -1016,7 +1016,9 @@
    Configure by pasting the Function URL below. While it is empty the panel
    stays dormant and makes no network request.
    ========================================================================== */
-const LIVE_API_URL = 'https://wy653rminjqhscbnxseelzy3ca0pmuyk.lambda-url.ap-south-1.on.aws/';
+/* LOCAL DEV: mock server. For real AWS, paste Lambda Function URL here.
+   Real Lambda: https://wy653rminjqhscbnxseelzy3ca0pmuyk.lambda-url.ap-south-1.on.aws/ */
+const LIVE_API_URL = 'http://localhost:3001/';
 
 (function () {
   'use strict';
