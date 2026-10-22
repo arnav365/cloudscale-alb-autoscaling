@@ -22,7 +22,7 @@
   /* ========================================================================
      01. HELPERS
      ==================================================================== */
-  const $  = (sel, root) => (root || document).querySelector(sel);
+  const $ = (sel, root) => (root || document).querySelector(sel);
   const $$ = (sel, root) => Array.prototype.slice.call((root || document).querySelectorAll(sel));
 
   const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
@@ -100,10 +100,10 @@
 
   /* Traffic tiers drive capacity, the dashboard and the scalability stages. */
   const TRAFFIC_LEVELS = [
-    { key: 'low',    label: 'Low',    desired: 2, rpm: [40, 110],   cpu: [12, 22], gauge: 15, stage: 1, speed: '2.6s' },
-    { key: 'normal', label: 'Normal', desired: 2, rpm: [150, 280],  cpu: [24, 38], gauge: 40, stage: 1, speed: '1.9s' },
-    { key: 'high',   label: 'High',   desired: 3, rpm: [340, 540],  cpu: [52, 68], gauge: 72, stage: 2, speed: '1.3s' },
-    { key: 'peak',   label: 'Peak',   desired: 4, rpm: [640, 920],  cpu: [74, 89], gauge: 96, stage: 3, speed: '0.9s' }
+    { key: 'low', label: 'Low', desired: 2, rpm: [40, 110], cpu: [12, 22], gauge: 15, stage: 1, speed: '2.6s' },
+    { key: 'normal', label: 'Normal', desired: 2, rpm: [150, 280], cpu: [24, 38], gauge: 40, stage: 1, speed: '1.9s' },
+    { key: 'high', label: 'High', desired: 3, rpm: [340, 540], cpu: [52, 68], gauge: 72, stage: 2, speed: '1.3s' },
+    { key: 'peak', label: 'Peak', desired: 4, rpm: [640, 920], cpu: [74, 89], gauge: 96, stage: 3, speed: '0.9s' }
   ];
 
   const AZS = ['ap-south-1a', 'ap-south-1b', 'ap-south-1a', 'ap-south-1b'];
@@ -142,32 +142,32 @@
      03. RENDERING
      ==================================================================== */
   const el = {
-    heroFleet:      $('[data-hero-fleet]'),
-    archDiagram:    $('#archDiagram'),
-    archFleet:      $('#archFleet'),
-    ec2Template:    $('#ec2NodeTemplate'),
-    splitWire:      $('.wire--split'),
-    mergeWire:      $('.wire--merge'),
-    asgNode:        $('.arch-node--asg'),
-    albNode:        $('.arch-node--alb'),
-    reqShift:       $('#reqShift'),
-    haTargets:      $('#haTargets'),
-    haMessage:      $('#haMessage'),
-    demoFleet:      $('#demoFleet'),
-    demoMessage:    $('#demoMessage'),
-    demoClock:      $('#demoClock'),
-    eventLog:       $('#eventLog'),
-    stages:         $$('#scaleStages .stage'),
-    failureLabel:   $('#btnFailureLabel'),
+    heroFleet: $('[data-hero-fleet]'),
+    archDiagram: $('#archDiagram'),
+    archFleet: $('#archFleet'),
+    ec2Template: $('#ec2NodeTemplate'),
+    splitWire: $('.wire--split'),
+    mergeWire: $('.wire--merge'),
+    asgNode: $('.arch-node--asg'),
+    albNode: $('.arch-node--alb'),
+    reqShift: $('#reqShift'),
+    haTargets: $('#haTargets'),
+    haMessage: $('#haMessage'),
+    demoFleet: $('#demoFleet'),
+    demoMessage: $('#demoMessage'),
+    demoClock: $('#demoClock'),
+    eventLog: $('#eventLog'),
+    stages: $$('#scaleStages .stage'),
+    failureLabel: $('#btnFailureLabel'),
     demoFailureLabel: $('#btnDemoFailureLabel'),
-    btnFailureHA:   $('#btnSimulateFailure'),
+    btnFailureHA: $('#btnSimulateFailure'),
     btnFailureDemo: $('#btnFailure'),
-    btnIncrease:    $('#btnIncrease'),
-    btnDecrease:    $('#btnDecrease'),
-    gaugeFill:      $('#gaugeFill'),
-    instanceBars:   $('#instanceBars'),
-    reqLine:        $('#reqLine'),
-    reqArea:        $('#reqArea')
+    btnIncrease: $('#btnIncrease'),
+    btnDecrease: $('#btnDecrease'),
+    gaugeFill: $('#gaugeFill'),
+    instanceBars: $('#instanceBars'),
+    reqLine: $('#reqLine'),
+    reqArea: $('#reqArea')
   };
 
   /** Full re-render of every state-driven panel. */
@@ -476,10 +476,10 @@
 
     if (after > before) {
       announce('Auto Scaling triggered — adding capacity. ' + (after - before) +
-               ' new EC2 instance' + (after - before > 1 ? 's' : '') + ' launched (desired ' + before + ' → ' + after + ').', 'good');
+        ' new EC2 instance' + (after - before > 1 ? 's' : '') + ' launched (desired ' + before + ' → ' + after + ').', 'good');
     } else if (after < before) {
       announce('Traffic reduced — scaling in. ' + (before - after) +
-               ' instance' + (before - after > 1 ? 's' : '') + ' terminated (desired ' + before + ' → ' + after + ').');
+        ' instance' + (before - after > 1 ? 's' : '') + ' terminated (desired ' + before + ' → ' + after + ').');
     } else if (next > previous) {
       announce('Traffic increased to ' + lvl.label.toUpperCase() + '. Existing capacity is still sufficient.');
     } else {
@@ -516,7 +516,7 @@
       logEvent('Health check failed on ' + subject.id + ' (2 consecutive checks)', 'alert');
       announce('Unhealthy instance detected (' + subject.id + '). Traffic redirected to the remaining healthy instance(s).', 'alert');
       announceHa('Unhealthy instance detected. Traffic redirected to ' +
-                 healthyInstances().map((i) => i.id).join(', ') + '.', 'alert');
+        healthyInstances().map((i) => i.id).join(', ') + '.', 'alert');
     }
 
     sampleMetrics();
@@ -527,8 +527,10 @@
     const survivors = healthyInstances().map(function (i) { return i.id; });
     if (recovering) {
       survivors.forEach(function (id) { flash(id, 'is-absorbing', 1500); });
-      later(function () { logEvent('Target group healthy — ' + survivors.length + ' of ' +
-        state.instances.length + ' targets passing checks', 'ok'); }, 650);
+      later(function () {
+        logEvent('Target group healthy — ' + survivors.length + ' of ' +
+          state.instances.length + ' targets passing checks', 'ok');
+      }, 650);
     } else {
       flash(subject.id, 'is-alarming', 1400);
       later(function () {
@@ -993,7 +995,7 @@
 
     logEvent('Auto Scaling group in service — desired capacity ' + state.instances.length, 'ok');
     logEvent('Target group healthy — ' + healthyInstances().length + ' of ' +
-             state.instances.length + ' targets passing checks', 'ok');
+      state.instances.length + ' targets passing checks', 'ok');
 
     startClock();
     startTicker();
@@ -1018,45 +1020,45 @@
    ========================================================================== */
 /* LOCAL DEV: mock server. For real AWS, paste Lambda Function URL here.
    Real Lambda: https://wy653rminjqhscbnxseelzy3ca0pmuyk.lambda-url.ap-south-1.on.aws/ */
-const LIVE_API_URL = 'http://localhost:3001/';
+const LIVE_API_URL = 'https://e53gvma2frcoihj43opm7hmp6m0vcdyr.lambda-url.ap-south-1.on.aws/';
 
 (function () {
   'use strict';
 
-  const REFRESH_MS    = 60000;       // auto-refresh every 60 seconds
-  const TIMEOUT_MS    = 15000;       // abort a hung request after 15 s
-  const POLL_DISPLAY  = '60s';
+  const REFRESH_MS = 60000;       // auto-refresh every 60 seconds
+  const TIMEOUT_MS = 15000;       // abort a hung request after 15 s
+  const POLL_DISPLAY = '60s';
 
-  const $  = (s, r) => (r || document).querySelector(s);
+  const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.prototype.slice.call((r || document).querySelectorAll(s));
-  const reduceMotion  = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const el = {
-    panel:         $('#liveMonitor'),
-    dot:           $('#liveDot'),
-    modeBadge:     $('#liveModeBadge'),
-    status:        $('#liveStatus'),
-    stamp:         $('#liveStamp'),
-    pollInterval:  $('#livePollInterval'),
-    refresh:       $('#liveRefresh'),
-    notice:        $('#liveNotice'),
-    body:          $('#liveBody'),
-    error:         $('#liveError'),
-    rows:          $('#mRows'),
-    fleet:         $('#mFleet'),
-    events:        $('#mEvents'),
-    line:          $('#mLine'),
-    target:        $('#mTargetLine'),
+    panel: $('#liveMonitor'),
+    dot: $('#liveDot'),
+    modeBadge: $('#liveModeBadge'),
+    status: $('#liveStatus'),
+    stamp: $('#liveStamp'),
+    pollInterval: $('#livePollInterval'),
+    refresh: $('#liveRefresh'),
+    notice: $('#liveNotice'),
+    body: $('#liveBody'),
+    error: $('#liveError'),
+    rows: $('#mRows'),
+    fleet: $('#mFleet'),
+    events: $('#mEvents'),
+    line: $('#mLine'),
+    target: $('#mTargetLine'),
     // Alarm elements
-    alarmOk:       $('#mAlarmOk'),
-    alarmIn:       $('#mAlarmIn'),
-    alarmNd:       $('#mAlarmNd'),
+    alarmOk: $('#mAlarmOk'),
+    alarmIn: $('#mAlarmIn'),
+    alarmNd: $('#mAlarmNd'),
     alarmListWrap: $('#mAlarmListWrap'),
-    alarmList:     $('#mAlarmList'),
+    alarmList: $('#mAlarmList'),
     // ALB elements
-    albNote:       $('#mAlbNote'),
+    albNote: $('#mAlbNote'),
     // Scaling activities
-    scalingList:   $('#mScalingList')
+    scalingList: $('#mScalingList')
   };
   if (!el.panel) return;
 
@@ -1069,12 +1071,12 @@ const LIVE_API_URL = 'http://localhost:3001/';
     return;
   }
 
-  let inFlight  = false;           // prevents overlapping requests
-  let timer     = null;
-  let previous  = null;            // last successful snapshot for change detection
+  let inFlight = false;           // prevents overlapping requests
+  let timer = null;
+  let previous = null;            // last successful snapshot for change detection
 
   el.notice.hidden = true;
-  el.body.hidden   = false;
+  el.body.hidden = false;
   el.refresh.disabled = false;
   el.refresh.addEventListener('click', function () { load('manual'); });
 
@@ -1108,18 +1110,48 @@ const LIVE_API_URL = 'http://localhost:3001/';
         cache: 'no-store',
         headers: { accept: 'application/json' }
       });
-      if (!res.ok) throw new Error('Backend returned HTTP ' + res.status);
+      if (!res.ok) {
+        console.error('[CloudScale Live Monitor] HTTP error from Lambda Function URL: ' + res.status + ' ' + res.statusText);
+        throw new Error('Backend returned HTTP ' + res.status);
+      }
 
-      const data = await res.json();
+      let rawData;
+      try {
+        rawData = await res.json();
+      } catch (parseErr) {
+        console.error('[CloudScale Live Monitor] Failed to parse JSON response: ' + (parseErr.message || parseErr));
+        throw new Error('Invalid JSON received from backend');
+      }
+
+      let data = rawData;
+      if (data && typeof data === 'object') {
+        if (typeof data.body === 'string') {
+          try {
+            data = JSON.parse(data.body);
+          } catch (bodyErr) {
+            console.error('[CloudScale Live Monitor] Failed to parse JSON in body field: ' + (bodyErr.message || bodyErr));
+            throw new Error('Invalid JSON in response body');
+          }
+        } else if (data.body && typeof data.body === 'object') {
+          data = data.body;
+        }
+      }
+
       render(data);
       detectChanges(data);
       previous = data;
 
-      const warned = (data.warnings && data.warnings.length) || !data.cpu?.available;
-      setStatus(warned ? 'warn' : 'live', warned ? 'Partial data' : 'Live');
-      showError(warned ? (data.warnings || []).join(' · ') : null, 'warn');
-      el.stamp.textContent = clock(data.fetchedAt);
+      const hasWarnings = Boolean(data.warnings && data.warnings.length);
+      setStatus(hasWarnings ? 'warn' : 'live', hasWarnings ? 'Partial data' : 'Live');
+      showError(hasWarnings ? data.warnings.join(' · ') : null, 'warn');
+      const ts = data.timestamp || data.fetchedAt;
+      el.stamp.textContent = clock(ts);
     } catch (err) {
+      if (err.name === 'AbortError') {
+        console.error('[CloudScale Live Monitor] Request timed out after ' + (TIMEOUT_MS / 1000) + 's');
+      } else {
+        console.error('[CloudScale Live Monitor] Telemetry request error:', err.message || 'Unknown network error');
+      }
       markStale();
       setStatus('error', err.name === 'AbortError' ? 'Timeout' : 'Error');
       showError(
@@ -1135,47 +1167,187 @@ const LIVE_API_URL = 'http://localhost:3001/';
   }
 
   /* --------------------------------------------------------------- render */
-  function render(d) {
-    $$('.live-card').forEach(function (c) { c.classList.remove('is-stale'); });
+  function normalizeCpu(cpuRaw, defaultTs) {
+    if (!cpuRaw || typeof cpuRaw !== 'object') return null;
 
-    const asg = d.asg && d.asg.available ? d.asg : null;
-    const tg  = d.targetGroup && d.targetGroup.available ? d.targetGroup : null;
-    const cpu = d.cpu && d.cpu.available ? d.cpu : null;
-    const alb = d.alb && d.alb.available ? d.alb : null;
+    const rawPoints = Array.isArray(cpuRaw.points) ? cpuRaw.points : [];
+    const points = rawPoints.map(function (p) {
+      if (!p || typeof p !== 'object') return null;
+      const t = p.timestamp || p.t || null;
+      const v = p.value !== undefined ? p.value : (p.v !== undefined ? p.v : null);
+      if (v === null || v === undefined || isNaN(Number(v))) return null;
+      return {
+        timestamp: t,
+        t: t,
+        value: Number(v),
+        v: Number(v)
+      };
+    }).filter(Boolean);
 
-    /* ── EC2 / ASG cards ──────────────────────────────────────────────── */
-    text('#mCpu', cpu && cpu.current !== null ? cpu.current.toFixed(1) + '%' : 'No data');
-    text('#mCpuAt', cpu && cpu.observedAt
-      ? 'measured ' + clock(cpu.observedAt)
-      : (cpu ? 'awaiting first datapoint' : 'CloudWatch unavailable'));
-    text('#mCpuNote', cpu && cpu.note ? cpu.note : '');
-
-    const targetCpu = asg && asg.targetCpu !== null && asg.targetCpu !== undefined ? asg.targetCpu : null;
-    text('#mCpuTarget', targetCpu !== null ? targetCpu + '%' : '—');
-    text('#mTargetLabel', targetCpu !== null ? targetCpu + '%' : '—');
-    if (el.target && targetCpu !== null) {
-      const y = 104 - (Math.min(targetCpu, 100) / 100) * 104;
-      el.target.setAttribute('y1', y.toFixed(1));
-      el.target.setAttribute('y2', y.toFixed(1));
+    let current = null;
+    if (cpuRaw.current !== undefined && cpuRaw.current !== null && !isNaN(Number(cpuRaw.current))) {
+      current = Number(cpuRaw.current);
+    } else if (points.length > 0) {
+      current = points[points.length - 1].value;
     }
 
-    text('#mHealthy',   asg ? String(asg.healthy) : '—');
-    text('#mInService', asg ? String(asg.inService) : '—');
-    text('#mDesired',   asg ? String(asg.desired) : '—');
-    text('#mMinMax',    asg ? asg.min + ' / ' + asg.max : '—');
-    text('#mAz',        asg ? String((asg.availabilityZones || []).length) : '—');
-    text('#mAzList',    asg ? (asg.availabilityZones || []).join(' · ') : 'unavailable');
+    const observedAt = cpuRaw.observedAt || (points.length ? points[points.length - 1].timestamp : defaultTs);
 
-    text('#mTg',     tg ? tg.healthy + ' / ' + tg.unhealthy : 'unavailable');
-    text('#mTgName', tg ? tg.name + ' · healthy / unhealthy' : (d.targetGroup && d.targetGroup.error) || 'healthy / unhealthy');
+    return {
+      available: current !== null || points.length > 0,
+      current: current,
+      observedAt: observedAt,
+      points: points,
+      note: cpuRaw.note || ''
+    };
+  }
+
+  function normalizeAlb(albRaw, d) {
+    const albObj = (albRaw && typeof albRaw === 'object') ? albRaw : {};
+    const defaultTs = d.timestamp || d.fetchedAt || null;
+
+    function getMetric(objVal, flatVal) {
+      if (objVal !== undefined && objVal !== null) {
+        if (typeof objVal === 'object') {
+          const val = objVal.value !== undefined ? objVal.value : null;
+          return {
+            value: val !== null && !isNaN(Number(val)) ? Number(val) : null,
+            observedAt: objVal.observedAt || defaultTs
+          };
+        }
+        return {
+          value: !isNaN(Number(objVal)) ? Number(objVal) : null,
+          observedAt: defaultTs
+        };
+      }
+      if (flatVal !== undefined && flatVal !== null) {
+        return {
+          value: !isNaN(Number(flatVal)) ? Number(flatVal) : null,
+          observedAt: defaultTs
+        };
+      }
+      return { value: null, observedAt: null };
+    }
+
+    const req = getMetric(albObj.requestCount, d.requestCount);
+    const lat = getMetric(albObj.responseTime, d.targetResponseTime);
+    const e4  = getMetric(albObj.http4xx, d.http4xxErrors);
+    const e5  = getMetric(albObj.http5xx, d.http5xxErrors);
+
+    return {
+      windowMinutes: albObj.windowMinutes || 60,
+      periodSeconds: albObj.periodSeconds || 60,
+      requestCount: req,
+      responseTime: lat,
+      http4xx: e4,
+      http5xx: e5,
+      note: albObj.note || ''
+    };
+  }
+
+  function render(d) {
+    if (!d || typeof d !== 'object') return;
+    $$('.live-card').forEach(function (c) { c.classList.remove('is-stale'); });
+
+    const defaultTs = d.timestamp || d.fetchedAt;
+    const asgData = d.asg && typeof d.asg === 'object' ? d.asg : null;
+    const tgData = d.targetGroup && typeof d.targetGroup === 'object' ? d.targetGroup : null;
+    const cpu = normalizeCpu(d.cpu, defaultTs);
+    const alb = normalizeAlb(d.alb, d);
+
+    /* ── EC2 / ASG cards ──────────────────────────────────────────────── */
+    // CPU: map normalized cpu.current to Current CPU card; never display "CloudWatch unavailable" when valid data exists
+    if (cpu && cpu.current !== null) {
+      text('#mCpu', cpu.current.toFixed(1) + '%');
+      text('#mCpuAt', cpu.observedAt ? 'measured ' + clock(cpu.observedAt) : 'from CloudWatch');
+      text('#mCpuNote', cpu.note || '');
+    } else {
+      text('#mCpu', 'No data');
+      text('#mCpuAt', 'CloudWatch unavailable');
+      text('#mCpuNote', '');
+    }
+
+    // CPU target: check whether backend returns targetCpu before attempting to render
+    const targetCpu = (asgData && asgData.targetCpu !== null && asgData.targetCpu !== undefined)
+      ? asgData.targetCpu
+      : (d.targetCpu !== undefined && d.targetCpu !== null ? d.targetCpu : null);
+
+    text('#mCpuTarget', targetCpu !== null ? targetCpu + '%' : '—');
+    text('#mTargetLabel', targetCpu !== null ? targetCpu + '%' : '—');
+    if (el.target) {
+      if (targetCpu !== null) {
+        const y = 104 - (Math.min(targetCpu, 100) / 100) * 104;
+        el.target.setAttribute('y1', y.toFixed(1));
+        el.target.setAttribute('y2', y.toFixed(1));
+      } else {
+        el.target.removeAttribute('y1');
+        el.target.removeAttribute('y2');
+      }
+    }
+
+    // Healthy instances: map healthyInstances or asgData.healthy
+    const healthyInstances = d.healthyInstances !== undefined && d.healthyInstances !== null
+      ? d.healthyInstances
+      : (asgData && asgData.healthy !== undefined && asgData.healthy !== null ? asgData.healthy : null);
+    text('#mHealthy', healthyInstances !== null ? String(healthyInstances) : '—');
+
+    // In service: check whether backend returns inService before attempting to render
+    const inService = d.inService !== undefined && d.inService !== null
+      ? d.inService
+      : (asgData && asgData.inService !== undefined && asgData.inService !== null ? asgData.inService : null);
+    text('#mInService', inService !== null ? String(inService) : '—');
+
+    // Desired capacity: map desiredCapacity or asgData.desired
+    const desired = d.desiredCapacity !== undefined && d.desiredCapacity !== null
+      ? d.desiredCapacity
+      : (asgData && asgData.desired !== undefined && asgData.desired !== null ? asgData.desired : null);
+    text('#mDesired', desired !== null ? String(desired) : '—');
+
+    // Min / Max capacity bounds: map minCapacity and maxCapacity
+    const minCap = d.minCapacity !== undefined && d.minCapacity !== null
+      ? d.minCapacity
+      : (asgData && asgData.min !== undefined && asgData.min !== null ? asgData.min : null);
+    const maxCap = d.maxCapacity !== undefined && d.maxCapacity !== null
+      ? d.maxCapacity
+      : (asgData && asgData.max !== undefined && asgData.max !== null ? asgData.max : null);
+    text('#mMinMax', (minCap !== null && maxCap !== null) ? minCap + ' / ' + maxCap : '—');
+
+    // Availability zones: check whether backend returns availabilityZones before attempting to render
+    const azs = (asgData && Array.isArray(asgData.availabilityZones))
+      ? asgData.availabilityZones
+      : (Array.isArray(d.availabilityZones) ? d.availabilityZones : null);
+    text('#mAz', azs !== null ? String(azs.length) : '—');
+    text('#mAzList', azs !== null ? azs.join(' · ') : 'unavailable');
+
+    // Target group: map healthyTargets or tgData
+    if (tgData && tgData.available) {
+      text('#mTg', tgData.healthy + ' / ' + tgData.unhealthy);
+      text('#mTgName', (tgData.name || 'CloudScale-TG') + ' · healthy / unhealthy');
+    } else if (d.healthyTargets !== undefined && d.healthyTargets !== null) {
+      if (d.unhealthyTargets !== undefined && d.unhealthyTargets !== null) {
+        text('#mTg', d.healthyTargets + ' / ' + d.unhealthyTargets);
+        text('#mTgName', 'healthy / unhealthy');
+      } else {
+        text('#mTg', String(d.healthyTargets));
+        text('#mTgName', 'healthy target(s)');
+      }
+    } else {
+      text('#mTg', '—');
+      text('#mTgName', 'unavailable');
+    }
 
     /* ── CPU chart ───────────────────────────────────────────────────── */
     drawChart(cpu);
-    drawFleet(d.instances && d.instances.items ? d.instances.items : []);
-    drawRows(d.instances, asg);
 
-    /* ── ALB CloudWatch metrics ──────────────────────────────────────── */
-    renderAlb(alb, d.alb);
+    /* ── Fleet & Instance Rows ────────────────────────────────────────── */
+    const instanceItems = (d.instances && Array.isArray(d.instances.items))
+      ? d.instances.items
+      : (Array.isArray(d.instances) ? d.instances : null);
+    drawFleet(instanceItems);
+    drawRows(instanceItems, d.instances && d.instances.error);
+
+    /* ── ALB Metrics ─────────────────────────────────────────────────── */
+    renderAlb(alb);
 
     /* ── CloudWatch Alarms ───────────────────────────────────────────── */
     renderAlarms(d.alarms);
@@ -1185,42 +1357,56 @@ const LIVE_API_URL = 'http://localhost:3001/';
   }
 
   /* ALB metrics */
-  function renderAlb(alb, raw) {
-    if (!alb) {
-      const msg = raw && raw.error ? raw.error : 'ALB metrics not available';
-      text('#mAlbRequests', 'N/A');
-      text('#mAlbLatency',  'N/A');
-      text('#mAlb4xx',      'N/A');
-      text('#mAlb5xx',      'N/A');
-      if (el.albNote) el.albNote.textContent = msg;
-      return;
+  function renderAlb(alb) {
+    if (!alb) return;
+
+    if (el.albNote) {
+      el.albNote.textContent = alb.note || ('last ' + alb.windowMinutes + ' min · ' + alb.periodSeconds + 's period');
     }
 
-    if (el.albNote) el.albNote.textContent = 'last ' + alb.windowMinutes + ' min · ' + alb.periodSeconds + 's period';
-
     const req = alb.requestCount;
-    text('#mAlbRequests', req.value !== null ? req.value.toLocaleString() : 'No data');
-    text('#mAlbRequestsAt', req.observedAt ? 'at ' + clock(req.observedAt) + ' · Sum/' + alb.periodSeconds + 's' : 'awaiting datapoint');
+    if (req.value !== null) {
+      text('#mAlbRequests', req.value.toLocaleString());
+      text('#mAlbRequestsAt', req.observedAt ? 'at ' + clock(req.observedAt) + ' · Sum' : 'last datapoint · Sum');
+    } else {
+      text('#mAlbRequests', 'N/A');
+      text('#mAlbRequestsAt', 'awaiting datapoint');
+    }
 
     const lat = alb.responseTime;
-    text('#mAlbLatency', lat.value !== null ? lat.value.toFixed(3) + 's' : 'No data');
-    text('#mAlbLatencyAt', lat.observedAt ? 'at ' + clock(lat.observedAt) + ' · Avg' : 'awaiting datapoint');
+    if (lat.value !== null) {
+      text('#mAlbLatency', lat.value.toFixed(3) + 's');
+      text('#mAlbLatencyAt', lat.observedAt ? 'at ' + clock(lat.observedAt) + ' · Avg' : 'Avg · seconds');
+    } else {
+      text('#mAlbLatency', 'N/A');
+      text('#mAlbLatencyAt', 'awaiting datapoint');
+    }
 
     const e4 = alb.http4xx;
-    const v4 = e4.value !== null ? e4.value : null;
-    text('#mAlb4xx', v4 !== null ? v4.toLocaleString() : 'No data');
-    text('#mAlb4xxAt', e4.observedAt ? 'at ' + clock(e4.observedAt) : 'awaiting datapoint');
     const card4 = $('#mAlb4xxCard');
-    if (card4) card4.classList.toggle('live-card--warn', v4 !== null && v4 > 0);
+    if (e4.value !== null) {
+      text('#mAlb4xx', e4.value.toLocaleString());
+      text('#mAlb4xxAt', e4.observedAt ? 'at ' + clock(e4.observedAt) : 'last datapoint');
+      if (card4) card4.classList.toggle('live-card--warn', e4.value > 0);
+    } else {
+      text('#mAlb4xx', 'N/A');
+      text('#mAlb4xxAt', 'awaiting datapoint');
+      if (card4) card4.classList.remove('live-card--warn');
+    }
 
     const e5 = alb.http5xx;
-    const v5 = e5.value !== null ? e5.value : null;
-    text('#mAlb5xx', v5 !== null ? v5.toLocaleString() : 'No data');
-    text('#mAlb5xxAt', e5.observedAt ? 'at ' + clock(e5.observedAt) : 'awaiting datapoint');
     const card5 = $('#mAlb5xxCard');
-    if (card5) {
-      card5.classList.toggle('live-card--error', v5 !== null && v5 > 0);
-      card5.classList.remove('live-card--warn');
+    if (e5.value !== null) {
+      text('#mAlb5xx', e5.value.toLocaleString());
+      text('#mAlb5xxAt', e5.observedAt ? 'at ' + clock(e5.observedAt) : 'last datapoint');
+      if (card5) {
+        card5.classList.toggle('live-card--error', e5.value > 0);
+        card5.classList.remove('live-card--warn');
+      }
+    } else {
+      text('#mAlb5xx', 'N/A');
+      text('#mAlb5xxAt', 'awaiting datapoint');
+      if (card5) card5.classList.remove('live-card--error', 'live-card--warn');
     }
   }
 
@@ -1260,38 +1446,59 @@ const LIVE_API_URL = 'http://localhost:3001/';
   /* Scaling activities list */
   function renderScalingActivities(scalingData) {
     if (!el.scalingList) return;
-    if (!scalingData || !scalingData.available) {
+
+    let activities = null;
+    let isAvailable = false;
+
+    if (Array.isArray(scalingData)) {
+      activities = scalingData;
+      isAvailable = true;
+    } else if (scalingData && typeof scalingData === 'object') {
+      if (scalingData.available === false) {
+        isAvailable = false;
+      } else if (Array.isArray(scalingData.activities)) {
+        activities = scalingData.activities;
+        isAvailable = true;
+      } else {
+        isAvailable = false;
+      }
+    }
+
+    if (!isAvailable) {
       el.scalingList.innerHTML = '<li class="scaling-item scaling-item--empty">Scaling activities unavailable</li>';
       return;
     }
-    const activities = (scalingData.activities || []);
+
     if (!activities.length) {
-      el.scalingList.innerHTML = '<li class="scaling-item scaling-item--empty">No recent scaling activities</li>';
+      el.scalingList.innerHTML = '<li class="scaling-item scaling-item--empty">No recent activities</li>';
       return;
     }
+
     el.scalingList.innerHTML = '';
     activities.forEach(function (a) {
-      const sc = a.status || 'Unknown';
+      const sc = a.status || a.statusCode || 'Unknown';
       const li = document.createElement('li');
       li.className = 'scaling-item';
-      const progressBar = a.status === 'InProgress' && a.progress !== null
-        ? '<span class="scaling-item__progress"><span class="scaling-item__progress-fill" style="width:' + a.progress + '%"></span></span>'
+      const progress = a.progress !== null && a.progress !== undefined ? Number(a.progress) : null;
+      const progressBar = (sc === 'InProgress' && progress !== null)
+        ? '<span class="scaling-item__progress"><span class="scaling-item__progress-fill" style="width:' + progress + '%"></span></span>'
         : '';
+      const timeStr = a.timestamp || a.startTime || a.endTime || null;
       li.innerHTML =
         '<span class="scaling-item__status scaling-item__status--' + esc(sc) + '" title="' + esc(sc) + '"></span>' +
         '<span class="scaling-item__body">' +
-          '<span class="scaling-item__desc">' + esc(a.description || '—') + '</span>' +
-          (a.cause ? '<span class="scaling-item__cause">' + esc(a.cause) + '</span>' : '') +
-          progressBar +
+        '<span class="scaling-item__desc">' + esc(a.description || '—') + '</span>' +
+        (a.cause ? '<span class="scaling-item__cause">' + esc(a.cause) + '</span>' : '') +
+        progressBar +
         '</span>' +
-        '<span class="scaling-item__time">' + (a.startTime ? clock(a.startTime) : '—') + '</span>';
+        '<span class="scaling-item__time">' + (timeStr ? clock(timeStr) : '—') + '</span>';
       el.scalingList.appendChild(li);
     });
   }
 
   function drawChart(cpu) {
     if (!el.line) return;
-    const pts = cpu && cpu.points ? cpu.points.filter(function (p) { return p.v !== null; }) : [];
+    const pts = cpu && cpu.points ? cpu.points.filter(function (p) { return p.v !== null && p.v !== undefined && !isNaN(p.v); }) : [];
     if (pts.length < 2) { el.line.setAttribute('points', ''); return; }
     const step = 320 / (pts.length - 1);
     el.line.setAttribute('points', pts.map(function (p, i) {
@@ -1303,8 +1510,8 @@ const LIVE_API_URL = 'http://localhost:3001/';
   function drawFleet(items) {
     if (!el.fleet) return;
     el.fleet.innerHTML = '';
-    if (!items.length) {
-      el.fleet.innerHTML = '<span class="live-table"><span class="empty">No instances reported</span></span>';
+    if (!items || !items.length) {
+      el.fleet.innerHTML = '<span class="live-table"><span class="empty">Detailed instance data is unavailable</span></span>';
       return;
     }
     items.forEach(function (i, n) {
@@ -1312,49 +1519,65 @@ const LIVE_API_URL = 'http://localhost:3001/';
       const node = document.createElement('div');
       node.className = 'live-node' + (bad ? ' is-bad' : '');
       if (!reduceMotion) node.style.animationDelay = (n * 60) + 'ms';
-      node.innerHTML = '<b>EC2</b><small>' + esc(i.az || '—') + '</small>';
+      const azName = i.az || i.availabilityZone || '—';
+      node.innerHTML = '<b>EC2</b><small>' + esc(azName) + '</small>';
       el.fleet.appendChild(node);
     });
   }
 
-  function drawRows(instances, asg) {
+  function drawRows(items, errorMsg) {
     if (!el.rows) return;
-    const items = instances && instances.items ? instances.items : [];
     el.rows.innerHTML = '';
-    if (!items.length) {
+    if (!items || !items.length) {
       el.rows.innerHTML = '<tr><td colspan="5" class="empty">' +
-        esc(instances && instances.error ? instances.error : 'No instances reported by AWS') + '</td></tr>';
+        esc(errorMsg || 'Detailed instance data is unavailable') + '</td></tr>';
       return;
     }
     items.forEach(function (i) {
       const healthy = i.health === 'Healthy';
+      const instId = i.id || i.instanceId || '—';
+      const instAz = i.az || i.availabilityZone || '—';
+      const lifecycle = i.lifecycle || i.lifecycleState;
       const tr = document.createElement('tr');
       tr.innerHTML =
-        '<td>' + esc(i.id || '—') + '</td>' +
+        '<td>' + esc(instId) + '</td>' +
         '<td>' + esc(i.type || '—') + '</td>' +
-        '<td>' + esc(i.az || '—') + '</td>' +
+        '<td>' + esc(instAz) + '</td>' +
         '<td>' + esc(i.state || '—') + '</td>' +
         '<td class="' + (healthy ? 'ok' : 'bad') + '">' + esc(i.health || '—') +
-          (i.lifecycle && i.lifecycle !== 'InService' ? ' · ' + esc(i.lifecycle) : '') + '</td>';
+        (lifecycle && lifecycle !== 'InService' ? ' · ' + esc(lifecycle) : '') + '</td>';
       el.rows.appendChild(tr);
     });
   }
 
   /* Only reports transitions this page actually observed between refreshes. */
   function detectChanges(d) {
-    if (!previous || !el.events) return;
-    const before = previous.asg, after = d.asg;
-    if (!before || !after || !before.available || !after.available) return;
+    if (!previous || !el.events || !d) return;
 
-    if (after.desired !== before.desired) {
-      logEvent(after.desired > before.desired ? 'is-out' : 'is-in',
-        'Desired capacity ' + before.desired + ' → ' + after.desired);
+    const beforeDesired = previous.desiredCapacity !== undefined
+      ? previous.desiredCapacity
+      : (previous.asg ? previous.asg.desired : undefined);
+    const afterDesired = d.desiredCapacity !== undefined
+      ? d.desiredCapacity
+      : (d.asg ? d.asg.desired : undefined);
+
+    if (beforeDesired !== undefined && afterDesired !== undefined && afterDesired !== beforeDesired) {
+      logEvent(afterDesired > beforeDesired ? 'is-out' : 'is-in',
+        'Desired capacity ' + beforeDesired + ' → ' + afterDesired);
     }
-    if (after.instanceCount !== before.instanceCount) {
-      const out = after.instanceCount > before.instanceCount;
+
+    const beforeCount = previous.instanceCount !== undefined
+      ? previous.instanceCount
+      : (previous.asg ? previous.asg.instanceCount : undefined);
+    const afterCount = d.instanceCount !== undefined
+      ? d.instanceCount
+      : (d.asg ? d.asg.instanceCount : undefined);
+
+    if (beforeCount !== undefined && afterCount !== undefined && afterCount !== beforeCount) {
+      const out = afterCount > beforeCount;
       logEvent(out ? 'is-out' : 'is-in',
         (out ? 'Scale-out detected: ' : 'Scale-in detected: ') +
-        before.instanceCount + ' → ' + after.instanceCount + ' instances');
+        beforeCount + ' → ' + afterCount + ' instances');
     }
   }
 
@@ -1382,7 +1605,8 @@ const LIVE_API_URL = 'http://localhost:3001/';
   /** On failure the numbers are dimmed — never passed off as current. */
   function markStale() {
     $$('.live-card').forEach(function (c) { c.classList.add('is-stale'); });
-    el.stamp.textContent = previous ? clock(previous.fetchedAt) + ' (stale)' : '—';
+    const prevTs = previous ? (previous.timestamp || previous.fetchedAt) : null;
+    el.stamp.textContent = prevTs ? clock(prevTs) + ' (stale)' : '—';
   }
 
   function showError(message, tone) {
@@ -1397,8 +1621,14 @@ const LIVE_API_URL = 'http://localhost:3001/';
     if (node) node.textContent = value;
   }
   function clock(iso) {
-    try { return new Date(iso).toLocaleTimeString([], { hour12: false }); }
-    catch (e) { return '—'; }
+    if (!iso) return 'Unknown';
+    try {
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return 'Unknown';
+      return d.toLocaleTimeString([], { hour12: false });
+    } catch (e) {
+      return 'Unknown';
+    }
   }
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) {

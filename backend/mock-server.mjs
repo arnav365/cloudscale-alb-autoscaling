@@ -167,6 +167,7 @@ function buildPayload() {
           cause: 'An alarm triggered a scale-out policy: avg CPU utilization above 50%.',
           status: 'Successful',
           progress: 100,
+          timestamp: ago(22),
           startTime: ago(22),
           endTime: ago(20)
         },
@@ -176,6 +177,7 @@ function buildPayload() {
           cause: 'An alarm triggered a scale-in policy: avg CPU utilization below 50%.',
           status: 'Successful',
           progress: 100,
+          timestamp: ago(65),
           startTime: ago(65),
           endTime: ago(62)
         },
@@ -185,6 +187,7 @@ function buildPayload() {
           cause: 'An alarm triggered a scale-out policy: avg CPU utilization above 50%.',
           status: 'Successful',
           progress: 100,
+          timestamp: ago(90),
           startTime: ago(90),
           endTime: ago(87)
         }

@@ -415,7 +415,8 @@ async function readScalingActivities() {
     status: a.StatusCode,          // 'InProgress' | 'Successful' | 'Failed' | 'Cancelled'
     progress: a.Progress ?? null,  // 0-100
     startTime: a.StartTime ? new Date(a.StartTime).toISOString() : null,
-    endTime: a.EndTime ? new Date(a.EndTime).toISOString() : null
+    endTime: a.EndTime ? new Date(a.EndTime).toISOString() : null,
+    timestamp: a.StartTime ? new Date(a.StartTime).toISOString() : (a.EndTime ? new Date(a.EndTime).toISOString() : null)
   }));
 
   return { available: true, activities };
