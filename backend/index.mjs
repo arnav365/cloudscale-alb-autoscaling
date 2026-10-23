@@ -63,6 +63,9 @@ const SCALING_ACTIVITY_MAX = Number(process.env.SCALING_ACTIVITY_MAX || 10);
 const CACHE_TTL_MS = Number(process.env.CACHE_TTL_MS || 15000);
 let cache = { at: 0, body: null };
 
+/* CORS: allow the ALB origin (or any origin when not specified).            */
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '*';
+
 const asg = new AutoScalingClient({ region: REGION });
 const ec2 = new EC2Client({ region: REGION });
 const elb = new ElasticLoadBalancingV2Client({ region: REGION });
@@ -425,7 +428,23 @@ async function readScalingActivities() {
 /* -------------------------------------------------------------------------
    Handler
    ------------------------------------------------------------------------- */
-export const handler = async () => {
+export const handler = async (event) => {
+  /* ---- CORS preflight (OPTIONS) ---------------------------------------- */
+  const method = event?.requestContext?.http?.method ||
+                 event?.httpMethod ||
+                 '';
+  if (method === 'OPTIONS') {
+    return {
+      statusCode: 204,
+      headers: {
+        'access-control-allow-origin':  ALLOWED_ORIGIN,
+        'access-control-allow-methods': 'GET,OPTIONS',
+        'access-control-allow-headers': 'content-type,accept',
+        'access-control-max-age':       '86400'
+      }
+    };
+  }
+
   const now = Date.now();
   if (cache.body && now - cache.at < CACHE_TTL_MS) {
     return respond(200, { ...cache.body, cached: true });
@@ -551,8 +570,9 @@ function respond(statusCode, body) {
   return {
     statusCode,
     headers: {
-      'content-type': 'application/json; charset=utf-8',
-      'cache-control': 'no-store'
+      'content-type':                'application/json; charset=utf-8',
+      'cache-control':               'no-store',
+      'access-control-allow-origin': ALLOWED_ORIGIN
     },
     body: JSON.stringify(body)
   };

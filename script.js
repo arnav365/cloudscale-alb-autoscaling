@@ -1018,8 +1018,7 @@
    Configure by pasting the Function URL below. While it is empty the panel
    stays dormant and makes no network request.
    ========================================================================== */
-/* LOCAL DEV: mock server. For real AWS, paste Lambda Function URL here.
-   Real Lambda: https://wy653rminjqhscbnxseelzy3ca0pmuyk.lambda-url.ap-south-1.on.aws/ */
+/* Active Lambda Function URL (ap-south-1). Set to '' to disable live monitor. */
 const LIVE_API_URL = 'https://e53gvma2frcoihj43opm7hmp6m0vcdyr.lambda-url.ap-south-1.on.aws/';
 
 (function () {
@@ -1231,8 +1230,8 @@ const LIVE_API_URL = 'https://e53gvma2frcoihj43opm7hmp6m0vcdyr.lambda-url.ap-sou
 
     const req = getMetric(albObj.requestCount, d.requestCount);
     const lat = getMetric(albObj.responseTime, d.targetResponseTime);
-    const e4  = getMetric(albObj.http4xx, d.http4xxErrors);
-    const e5  = getMetric(albObj.http5xx, d.http5xxErrors);
+    const e4 = getMetric(albObj.http4xx, d.http4xxErrors);
+    const e5 = getMetric(albObj.http5xx, d.http5xxErrors);
 
     return {
       windowMinutes: albObj.windowMinutes || 60,
@@ -1250,8 +1249,13 @@ const LIVE_API_URL = 'https://e53gvma2frcoihj43opm7hmp6m0vcdyr.lambda-url.ap-sou
     $$('.live-card').forEach(function (c) { c.classList.remove('is-stale'); });
 
     const defaultTs = d.timestamp || d.fetchedAt;
-    const asgData = d.asg && typeof d.asg === 'object' ? d.asg : null;
-    const tgData = d.targetGroup && typeof d.targetGroup === 'object' ? d.targetGroup : null;
+    const asgData = d.autoScalingGroup && typeof d.autoScalingGroup === 'object'
+      ? d.autoScalingGroup
+      : null;
+
+    const tgData = d.targetGroup && typeof d.targetGroup === 'object'
+      ? d.targetGroup
+      : null;
     const cpu = normalizeCpu(d.cpu, defaultTs);
     const alb = normalizeAlb(d.alb, d);
 
